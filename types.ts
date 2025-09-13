@@ -91,6 +91,7 @@ export interface RideLog {
   status: RideStatus;
   vehicleId: number | null;
   smsSent: boolean;
+  passengers: number;
   notes?: string;
   estimatedPrice?: number;
   // Timestamps for tracking and notifications

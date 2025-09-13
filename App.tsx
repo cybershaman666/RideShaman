@@ -3,7 +3,7 @@ import { DispatchFormComponent } from './components/DispatchForm';
 import { VehicleStatusTable } from './components/VehicleStatusTable';
 import { AssignmentResult } from './components/AssignmentResult';
 import { Vehicle, RideRequest, AssignmentResultData, VehicleStatus, VehicleType, ErrorResult, RideLog, RideStatus, LayoutConfig, LayoutItem, Notification, Person, PersonRole, WidgetId, Tariff, FlatRateRule, AssignmentAlternative } from './types';
-import { findBestVehicle } from './services/dispatchService';
+import { findBestVehicle, generateSms } from './services/dispatchService';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ShamanIcon, SettingsIcon, UndoIcon, DownloadIcon, UploadIcon, PhoneIcon, PriceTagIcon, CsvIcon, BarChartIcon } from './components/icons';
 import { EditVehicleModal } from './components/EditVehicleModal';
@@ -18,6 +18,7 @@ import { NotificationCenter } from './components/NotificationCenter';
 import { ManagePeopleModal } from './components/PhoneDirectoryModal';
 import { TariffSettingsModal } from './components/TariffSettingsModal';
 import { AnalyticsModal } from './components/AnalyticsModal';
+import { SmsPreviewModal } from './components/SmsPreviewModal';
 
 
 // Initial data for people
@@ -128,6 +129,7 @@ const App: React.FC = () => {
   const [isAddingVehicle, setIsAddingVehicle] = useState(false);
   const [editingRideLog, setEditingRideLog] = useState<RideLog | null>(null);
   const [manualAssignmentDetails, setManualAssignmentDetails] = useState<{rideRequest: RideRequest, vehicle: Vehicle, rideDuration: number, sms: string, estimatedPrice: number} | null>(null);
+  const [smsToPreview, setSmsToPreview] = useState<{ sms: string; driverPhone?: string } | null>(null);
 
   const [isAiEnabled, setIsAiEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('rapid-dispatch-ai-enabled');
@@ -280,6 +282,7 @@ const App: React.FC = () => {
         customerPhone: rideRequest.customerPhone,
         pickupAddress: rideRequest.pickupAddress,
         destinationAddress: rideRequest.destinationAddress,
+        passengers: rideRequest.passengers,
         pickupTime: rideRequest.pickupTime,
         status: RideStatus.Scheduled,
         vehicleId: null,
@@ -350,6 +353,7 @@ const App: React.FC = () => {
       customerPhone: rideRequest.customerPhone,
       pickupAddress: rideRequest.pickupAddress,
       destinationAddress: rideRequest.destinationAddress,
+      passengers: rideRequest.passengers,
       pickupTime: rideRequest.pickupTime,
       status: RideStatus.OnTheWay,
       vehicleId: chosenVehicle.id,
@@ -386,6 +390,7 @@ const App: React.FC = () => {
         customerPhone: rideRequest.customerPhone,
         pickupAddress: rideRequest.pickupAddress,
         destinationAddress: rideRequest.destinationAddress,
+        passengers: rideRequest.passengers,
         pickupTime: rideRequest.pickupTime,
         status: RideStatus.OnTheWay,
         vehicleId: vehicle.id,
@@ -454,7 +459,6 @@ const App: React.FC = () => {
   const handleUpdateRideLog = (updatedLog: RideLog) => {
     const originalLog = rideLog.find(log => log.id === updatedLog.id);
     setRideLog(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log));
-    setEditingRideLog(null);
 
     if (originalLog && originalLog.status !== updatedLog.status && updatedLog.vehicleId) {
         if (updatedLog.status === RideStatus.Completed || updatedLog.status === RideStatus.Cancelled) {
@@ -463,6 +467,16 @@ const App: React.FC = () => {
             setVehicles(prev => prev.map(v => v.id === updatedLog.vehicleId ? { ...v, status: VehicleStatus.Busy, freeAt: updatedLog.estimatedCompletionTimestamp } : v));
         }
     }
+    
+    // Show SMS preview if a scheduled ride is dispatched
+    if (originalLog && originalLog.status === RideStatus.Scheduled && updatedLog.status === RideStatus.OnTheWay && updatedLog.vehicleId) {
+        const smsText = generateSms(updatedLog);
+        const assignedVehicle = vehicles.find(v => v.id === updatedLog.vehicleId);
+        const driver = people.find(p => p.id === assignedVehicle?.driverId);
+        setSmsToPreview({ sms: smsText, driverPhone: driver?.phone });
+    }
+
+    setEditingRideLog(null);
   };
   
   const handleRideStatusChange = (logId: string, newStatus: RideStatus) => {
@@ -658,6 +672,7 @@ const App: React.FC = () => {
       {isPeopleModalOpen && (<ManagePeopleModal people={people} onAdd={handleAddPerson} onUpdate={handleUpdatePerson} onDelete={handleDeletePerson} onClose={() => setIsPeopleModalOpen(false)}/>)}
       {isTariffModalOpen && (<TariffSettingsModal initialTariff={tariff} onSave={setTariff} onClose={() => setIsTariffModalOpen(false)} />)}
       {isAnalyticsModalOpen && <AnalyticsModal rideLog={rideLog} vehicles={vehicles} onClose={() => setIsAnalyticsModalOpen(false)} />}
+      {smsToPreview && <SmsPreviewModal sms={smsToPreview.sms} driverPhone={smsToPreview.driverPhone} onClose={() => setSmsToPreview(null)} />}
       
       <input type="file" ref={fileInputRef} onChange={handleLoadData} accept=".json" className="hidden" aria-hidden="true"/>
     </div>
