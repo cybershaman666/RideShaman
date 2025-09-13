@@ -1,0 +1,251 @@
+
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import type { Vehicle, AssignmentResultData, Person } from '../types';
+import { VehicleType } from '../types';
+
+// Fix for default icon path issue with bundlers
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import iconUrl from 'leaflet/dist/images/marker-icon.png';
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl,
+  iconUrl,
+  shadowUrl,
+});
+
+
+interface OpenStreetMapProps {
+    vehicles: Vehicle[];
+    people: Person[];
+    routeToPreview: { origin: string; destination:string; } | null;
+    confirmedAssignment: AssignmentResultData | null;
+}
+
+type Coords = [number, number]; // [lat, lon]
+type RouteSummary = { distance: string; duration: string };
+
+// --- Caching and API helpers ---
+const geocodeCache = new Map<string, Coords>();
+const SOUTH_MORAVIA_VIEWBOX = '16.3,48.7,17.2,49.3'; // lon_min,lat_min,lon_max,lat_max
+
+async function geocodeAddress(address: string): Promise<Coords> {
+    if (geocodeCache.has(address)) {
+        return geocodeCache.get(address)!;
+    }
+
+    const fetchCoords = async (addrToTry: string): Promise<Coords | null> => {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}`;
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'RapidDispatchAI/1.0 (https://example.com)' }
+        });
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (data && data.length > 0) {
+            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+        }
+        return null;
+    };
+
+    try {
+        // Attempt 1: Full address
+        let result = await fetchCoords(address);
+
+        // Attempt 2: Fallback to just the city/town
+        if (!result) {
+            const parts = address.split(',').map(p => p.trim());
+            const city = parts[parts.length - 1];
+            if (city && city.toLowerCase() !== address.toLowerCase()) {
+                console.log(`Map geocoding for "${address}" failed. Falling back to "${city}".`);
+                result = await fetchCoords(city);
+            }
+        }
+        
+        if (result) {
+            geocodeCache.set(address, result); // Cache under the original full address
+            return result;
+        }
+
+        throw new Error(`Address not found: ${address}`);
+    } catch (error) {
+         console.error(`Could not geocode address for map: ${address}`, error);
+         throw error; // Let the calling component handle it (e.g., log it)
+    }
+}
+
+
+async function getRoute(waypoints: Coords[]): Promise<{geometry: Coords[], summary: RouteSummary} | null> {
+    if (waypoints.length < 2) return null;
+    const coordsString = waypoints.map(c => `${c[1]},${c[0]}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const geometry = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]]); // Swap lon,lat to lat,lon
+        const summary = {
+            distance: `${(route.distance / 1000).toFixed(1)} km`,
+            duration: `${Math.round(route.duration / 60)} min`
+        };
+        return { geometry, summary };
+    }
+    return null;
+}
+
+// --- Internal Map Components ---
+
+// Helper component to fix map rendering issues in dynamic containers
+const MapResizeController: React.FC = () => {
+    const map = useMap();
+    useEffect(() => {
+        const timer = setTimeout(() => map.invalidateSize(), 100);
+        return () => clearTimeout(timer);
+    }, [map]);
+    return null;
+};
+
+
+const VehicleMarker: React.FC<{ vehicle: Vehicle, people: Person[] }> = ({ vehicle, people }) => {
+    const [position, setPosition] = useState<Coords | null>(null);
+    const driver = people.find(p => p.id === vehicle.driverId);
+
+    useEffect(() => {
+        geocodeAddress(vehicle.location)
+            .then(setPosition)
+            .catch(err => console.error(err));
+    }, [vehicle.location]);
+
+    const iconHtml = `
+      <div class="p-1 bg-slate-900/80 rounded-full backdrop-blur-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${vehicle.type === VehicleType.Car ? 'text-amber-400' : 'text-gray-200'}">
+          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+          <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/>
+        </svg>
+      </div>`;
+      
+    const customIcon = new L.DivIcon({
+        html: iconHtml,
+        className: 'vehicle-marker',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20]
+    });
+    
+    if (!position) return null;
+    return (
+        <Marker position={position} icon={customIcon}>
+            <Popup>
+                <div className="text-sm">
+                    <p className="font-bold text-base">{vehicle.name}</p>
+                    <p>{driver?.name || 'Nepřiřazen'}</p>
+                    <p className="font-mono text-xs">{vehicle.licensePlate}</p>
+                </div>
+            </Popup>
+        </Marker>
+    );
+};
+
+const RouteDrawer: React.FC<{
+    routeToPreview: OpenStreetMapProps['routeToPreview'];
+    confirmedAssignment: OpenStreetMapProps['confirmedAssignment'];
+    onRouteCalculated: (summary: RouteSummary | null) => void;
+}> = ({ routeToPreview, confirmedAssignment, onRouteCalculated }) => {
+    const map = useMap();
+    const [routeGeometry, setRouteGeometry] = useState<Coords[] | null>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const calculateAndDrawRoute = async (waypointsPromise: Promise<Coords[]>) => {
+            try {
+                const waypoints = await waypointsPromise;
+                if (!isMounted || waypoints.length < 2) {
+                    setRouteGeometry(null);
+                    onRouteCalculated(null);
+                    return;
+                }
+
+                const routeData = await getRoute(waypoints);
+                if (isMounted && routeData && routeData.geometry.length > 0) {
+                    setRouteGeometry(routeData.geometry);
+                    onRouteCalculated(routeData.summary);
+                    map.fitBounds(L.latLngBounds(routeData.geometry), { padding: [50, 50] });
+                } else if (isMounted) {
+                    setRouteGeometry(null);
+                    onRouteCalculated(null);
+                }
+            } catch (err) {
+                console.error("Failed to draw route:", err);
+                if (isMounted) {
+                    setRouteGeometry(null);
+                    onRouteCalculated(null);
+                }
+            }
+        };
+
+        let waypointsPromise: Promise<Coords[]> | null = null;
+        if (confirmedAssignment) {
+            waypointsPromise = Promise.all([
+                geocodeAddress(confirmedAssignment.vehicle.location),
+                geocodeAddress(confirmedAssignment.rideRequest.pickupAddress),
+                geocodeAddress(confirmedAssignment.rideRequest.destinationAddress)
+            ]);
+        } else if (routeToPreview?.origin && routeToPreview?.destination) {
+            waypointsPromise = Promise.all([
+                geocodeAddress(routeToPreview.origin),
+                geocodeAddress(routeToPreview.destination)
+            ]);
+        }
+
+        if (waypointsPromise) {
+            calculateAndDrawRoute(waypointsPromise);
+        } else {
+            setRouteGeometry(null);
+            onRouteCalculated(null);
+        }
+
+        return () => { isMounted = false; };
+    }, [routeToPreview, confirmedAssignment, map, onRouteCalculated]);
+    
+    if (!routeGeometry) return null;
+
+    return <Polyline positions={routeGeometry} color="#f59e0b" weight={5} opacity={0.8} />;
+};
+
+
+// --- Main Map Component ---
+
+export const OpenStreetMap: React.FC<OpenStreetMapProps> = ({ vehicles, people, routeToPreview, confirmedAssignment }) => {
+    const [routeSummary, setRouteSummary] = useState<RouteSummary | null>(null);
+    const center: Coords = useMemo(() => [48.85, 16.63], []); // Mikulov/Hustopeče area
+
+    return (
+        <div className="bg-slate-800 p-6 rounded-lg shadow-2xl flex flex-col h-full">
+            <h2 className="text-2xl font-semibold mb-4 border-b border-slate-700 pb-3">Mapa</h2>
+            <div className="flex-grow w-full rounded-lg bg-slate-700 overflow-hidden border border-slate-700 relative z-0">
+                <MapContainer center={center} zoom={11} className="w-full h-full" scrollWheelZoom={true}>
+                    <MapResizeController />
+                    <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    {vehicles.map(v => <VehicleMarker key={v.id} vehicle={v} people={people} />)}
+                    <RouteDrawer
+                        routeToPreview={routeToPreview}
+                        confirmedAssignment={confirmedAssignment}
+                        onRouteCalculated={setRouteSummary}
+                    />
+                </MapContainer>
+                {routeSummary && (
+                    <div className="absolute bottom-4 left-4 bg-slate-900/80 p-3 rounded-lg text-white text-sm shadow-lg backdrop-blur-sm animate-fade-in z-[1000]">
+                        <p><strong>Vzdálenost:</strong> {routeSummary.distance}</p>
+                        <p><strong>Doba jízdy:</strong> {routeSummary.duration}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};

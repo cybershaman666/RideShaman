@@ -1,0 +1,187 @@
+import React from 'react';
+import { RideLog, VehicleType, RideStatus } from '../types';
+import { CarIcon, VanIcon, ArrowUpIcon, ArrowDownIcon, EditIcon } from './icons';
+
+interface RideLogTableProps {
+  logs: RideLog[];
+  onSort: (key: 'timestamp' | 'customerName') => void;
+  sortConfig: {
+    key: 'timestamp' | 'customerName';
+    direction: 'asc' | 'desc';
+  };
+  onToggleSmsSent: (logId: string) => void;
+  onEdit: (log: RideLog) => void;
+  onStatusChange: (logId: string, newStatus: RideStatus) => void;
+  showCompleted: boolean;
+  onToggleShowCompleted: () => void;
+}
+
+const SortableHeader: React.FC<{
+  label: string;
+  sortKey: 'timestamp' | 'customerName';
+  onSort: (key: 'timestamp' | 'customerName') => void;
+  sortConfig: RideLogTableProps['sortConfig'];
+  className?: string;
+}> = ({ label, sortKey, onSort, sortConfig, className }) => {
+  const isSorted = sortConfig.key === sortKey;
+  const direction = isSorted ? sortConfig.direction : null;
+
+  return (
+     <th scope="col" className={`py-3.5 text-left text-sm font-semibold text-gray-300 ${className}`}>
+        <button
+          onClick={() => onSort(sortKey)}
+          className="flex items-center space-x-1 group"
+          aria-label={`Sort by ${label}`}
+        >
+          <span>{label}</span>
+          <span className="opacity-50 group-hover:opacity-100 transition-opacity">
+            {direction === 'asc' && <ArrowUpIcon size={14} />}
+            {direction === 'desc' && <ArrowDownIcon size={14} />}
+          </span>
+        </button>
+      </th>
+  );
+};
+
+
+export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortConfig, onToggleSmsSent, onEdit, onStatusChange, showCompleted, onToggleShowCompleted }) => {
+  const getStatusSelectClass = (status: RideStatus) => {
+    const base = "w-full rounded-md border-0 py-1 pl-3 pr-8 text-xs font-medium focus:ring-2 focus:ring-inset focus:ring-amber-500 cursor-pointer transition-colors capitalize";
+    switch (status) {
+      case RideStatus.Scheduled:
+        return `${base} bg-sky-400/10 text-sky-400 ring-1 ring-inset ring-sky-400/20 hover:bg-sky-400/20`;
+      case RideStatus.OnTheWay:
+        return `${base} bg-yellow-400/10 text-yellow-400 ring-1 ring-inset ring-yellow-400/20 hover:bg-yellow-400/20`;
+      case RideStatus.Completed:
+        return `${base} bg-green-500/10 text-green-400 ring-1 ring-inset ring-green-500/20 hover:bg-green-500/20`;
+      case RideStatus.Cancelled:
+        return `${base} bg-red-400/10 text-red-400 ring-1 ring-inset ring-red-400/20 hover:bg-red-400/20`;
+      default:
+        return `${base} bg-gray-400/10 text-gray-400 ring-1 ring-inset ring-gray-400/20 hover:bg-gray-400/20`;
+    }
+  };
+
+  return (
+    <div className="bg-slate-800 p-6 rounded-lg shadow-2xl flex flex-col h-full">
+      <div className="flex-shrink-0 flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
+        <h2 className="text-2xl font-semibold">Historie Jízd</h2>
+        <div className="flex items-center space-x-3">
+            <label htmlFor="show-completed" className="text-sm font-medium text-gray-300 cursor-pointer">
+                Zobrazit dokončené
+            </label>
+            <button
+                onClick={onToggleShowCompleted}
+                type="button"
+                className={`${
+                showCompleted ? 'bg-amber-600' : 'bg-slate-600'
+                } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
+                role="switch"
+                aria-checked={showCompleted}
+                id="show-completed"
+            >
+                <span
+                aria-hidden="true"
+                className={`${
+                    showCompleted ? 'translate-x-5' : 'translate-x-0'
+                } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+                />
+            </button>
+        </div>
+      </div>
+      {logs.length === 0 ? (
+         <p className="text-gray-400 text-center py-4">
+             {showCompleted ? "Zatím nebyly zaznamenány žádné jízdy." : "Žádné aktivní nebo zrušené jízdy."}
+         </p>
+      ) : (
+        <div className="flex-grow overflow-y-auto -mr-6 -ml-6 pr-6 pl-6">
+          <table className="min-w-full divide-y divide-slate-700">
+            <thead className="bg-slate-800 sticky top-0 z-10">
+              <tr>
+                <SortableHeader label="Čas" sortKey="timestamp" onSort={onSort} sortConfig={sortConfig} className="pl-4 pr-3 sm:pl-0" />
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Řidič</th>
+                <SortableHeader label="Zákazník" sortKey="customerName" onSort={onSort} sortConfig={sortConfig} className="px-3" />
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Tel. číslo</th>
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Trasa</th>
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Cena</th>
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Status</th>
+                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">SMS</th>
+                <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-300">Akce</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {logs.map((log) => (
+                <tr key={log.id} className={`${log.status === RideStatus.Scheduled ? 'bg-sky-900/50' : ''} hover:bg-slate-700/50`}>
+                  <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-400 sm:pl-0">
+                    {new Date(log.timestamp).toLocaleString('cs-CZ')}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm">
+                    <div className="flex items-center">
+                      {log.vehicleType && (
+                        <div className={`${log.vehicleType === VehicleType.Car ? 'text-gray-400' : 'text-gray-200'} mr-3 flex-shrink-0`}>
+                          <CarIcon />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium text-white">{log.driverName || <span className="text-sky-400 italic">Čeká na přiřazení</span>}</div>
+                        {log.vehicleName && <div className="text-gray-400 text-xs">{log.vehicleName} ({log.vehicleLicensePlate})</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">{log.customerName}</td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">{log.customerPhone}</td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 max-w-xs">
+                    <div className="flex flex-col">
+                      <span className="truncate" title={log.pickupAddress}><strong>Z:</strong> {log.pickupAddress}</span>
+                      <span className="truncate" title={log.destinationAddress}><strong>Do:</strong> {log.destinationAddress}</span>
+                      <span className="truncate text-teal-400 text-xs" title={log.pickupTime}><strong>Vyzvednout:</strong> {log.pickupTime}</span>
+                      {log.notes && (
+                        <span className="truncate text-yellow-300 text-xs mt-1" title={log.notes}>
+                          <strong>Pozn.:</strong> {log.notes}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-white">
+                     {log.estimatedPrice ? `${log.estimatedPrice} Kč` : 'N/A'}
+                  </td>
+                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
+                     <select
+                        value={log.status}
+                        onChange={(e) => onStatusChange(log.id, e.target.value as RideStatus)}
+                        className={getStatusSelectClass(log.status)}
+                        aria-label={`Změnit status pro jízdu se zákazníkem ${log.customerName}`}
+                    >
+                        {Object.values(RideStatus).map(status => (
+                            <option key={status} value={status} className="bg-slate-800 text-white">
+                                {status}
+                            </option>
+                        ))}
+                    </select>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={log.smsSent}
+                      onChange={() => onToggleSmsSent(log.id)}
+                      className="h-5 w-5 rounded bg-slate-700 border-slate-600 text-amber-500 focus:ring-amber-600 focus:ring-offset-slate-800 cursor-pointer"
+                      aria-label={`Označit SMS jako odeslanou pro jízdu se zákazníkem ${log.customerName}`}
+                    />
+                  </td>
+                  <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                    <button
+                      onClick={() => onEdit(log)}
+                      className="text-amber-400 hover:text-amber-300 transition-colors p-2 -m-2 rounded-full"
+                      aria-label={`Upravit jízdu se zákazníkem ${log.customerName}`}
+                    >
+                      <EditIcon />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+};
