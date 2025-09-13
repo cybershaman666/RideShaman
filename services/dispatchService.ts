@@ -1,7 +1,5 @@
-
-
 import { GoogleGenAI, Type } from "@google/genai";
-import type { RideRequest, Vehicle, AssignmentResultData, ErrorResult, AssignmentAlternative, Tariff } from '../types';
+import type { RideRequest, Vehicle, AssignmentResultData, ErrorResult, AssignmentAlternative, Tariff, RideLog } from '../types';
 import { VehicleStatus, VehicleType } from '../types';
 
 const GEMINI_API_KEY = process.env.API_KEY;
@@ -13,7 +11,7 @@ const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY! });
 /**
  * Generates an SMS message for the driver.
  */
-export function generateSms(ride: RideRequest): string {
+export function generateSms(ride: RideRequest | RideLog): string {
   let formattedPickupTime = ride.pickupTime;
   
   if (ride.pickupTime === 'ihned') {

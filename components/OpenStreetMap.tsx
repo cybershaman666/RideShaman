@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -223,8 +221,8 @@ export const OpenStreetMap: React.FC<OpenStreetMapProps> = ({ vehicles, people, 
     const center: Coords = useMemo(() => [48.85, 16.63], []); // Mikulov/Hustopeče area
 
     return (
-        <div className="bg-slate-800 p-6 rounded-lg shadow-2xl flex flex-col h-full">
-            <h2 className="text-2xl font-semibold mb-4 border-b border-slate-700 pb-3">Mapa</h2>
+        <div className="bg-slate-800 p-2 rounded-lg shadow-2xl flex flex-col h-full">
+            <h2 className="text-md font-semibold mb-1 border-b border-slate-700 pb-1">Mapa</h2>
             <div className="flex-grow w-full rounded-lg bg-slate-700 overflow-hidden border border-slate-700 relative z-0">
                 <MapContainer center={center} zoom={11} className="w-full h-full" scrollWheelZoom={true}>
                     <MapResizeController />

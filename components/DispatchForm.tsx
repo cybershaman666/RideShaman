@@ -20,14 +20,14 @@ const InputField: React.FC<{
     error?: string
 }> = ({label, id, value, onChange, type='text', error}) => (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+      <label htmlFor={id} className="block text-xs font-medium text-gray-300 mb-1">{label}</label>
       <input
         type={type}
         id={id}
         name={id}
         value={value}
         onChange={onChange}
-        className={`w-full bg-slate-700 border ${error ? 'border-red-500' : 'border-slate-600'} rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
+        className={`w-full bg-slate-700 border ${error ? 'border-red-500' : 'border-slate-600'} rounded-md shadow-sm py-1 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
       />
       {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
     </div>
@@ -85,7 +85,7 @@ const AutocompleteInputField: React.FC<{
   
   return (
     <div className="relative" ref={wrapperRef}>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+      <label htmlFor={id} className="block text-xs font-medium text-gray-300 mb-1">{label}</label>
       <input
         type="text"
         id={id}
@@ -93,7 +93,7 @@ const AutocompleteInputField: React.FC<{
         value={value}
         onChange={handleChange}
         onFocus={() => value && filterSuggestions(value)} // Show suggestions on focus if there's text
-        className={`w-full bg-slate-700 border ${error ? 'border-red-500' : 'border-slate-600'} rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
+        className={`w-full bg-slate-700 border ${error ? 'border-red-500' : 'border-slate-600'} rounded-md shadow-sm py-1 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
         autoComplete="off"
       />
       {hint && !error && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
@@ -225,11 +225,11 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
   const isOnCooldown = cooldownTime > 0;
 
   return (
-    <div className="bg-slate-800 p-6 rounded-lg shadow-2xl flex flex-col h-full">
-        <h2 className="text-2xl font-semibold mb-4 border-b border-slate-700 pb-3">Nová Jízda</h2>
-        <form onSubmit={handleSubmit} className="space-y-4 flex-grow flex flex-col">
-        <div className="flex-grow space-y-4 overflow-y-auto pr-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="bg-slate-800 p-2 rounded-lg shadow-2xl flex flex-col h-full">
+        <h2 className="text-md font-semibold mb-1 border-b border-slate-700 pb-1">Nová Jízda</h2>
+        <form onSubmit={handleSubmit} className="space-y-1 flex-grow flex flex-col">
+        <div className="flex-grow space-y-1 overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <AutocompleteInputField 
                     label="Adresa nástupu" 
                     id="pickupAddress" 
@@ -251,11 +251,11 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
             </div>
             <AutocompleteInputField label="Jméno zákazníka" id="customerName" value={customerName} onChange={setCustomerName} suggestions={uniqueCustomerNames} error={errors.customerName} />
             <InputField label="Telefonní číslo" id="customerPhone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} type="tel" error={errors.customerPhone} />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <InputField label="Počet cestujících" id="passengers" value={passengers} onChange={e => setPassengers(Math.max(1, parseInt(e.target.value, 10) || 1))} type="number" error={errors.passengers} />
                 <div>
                     <div className="flex justify-between items-center mb-1">
-                        <label className="block text-sm font-medium text-gray-300">Čas vyzvednutí</label>
+                        <label className="block text-xs font-medium text-gray-300">Čas vyzvednutí</label>
                         <div className="flex items-center">
                             <input
                                 type="checkbox"
@@ -276,37 +276,37 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
                             value={pickupTime === 'ihned' ? formatDateForPicker(new Date()) : pickupTime}
                             onChange={(e) => setPickupTime(e.target.value)}
                             min={formatDateForPicker(new Date())}
-                            className={`w-full bg-slate-700 border ${errors.pickupTime ? 'border-red-500' : 'border-slate-600'} rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
+                            className={`w-full bg-slate-700 border ${errors.pickupTime ? 'border-red-500' : 'border-slate-600'} rounded-md shadow-sm py-1 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
                         />
                     ) : (
                         <input
                             type="text"
                             value="Ihned"
                             readOnly
-                            className="w-full bg-slate-600 border border-slate-500 rounded-md shadow-sm py-2 px-3 text-gray-300 cursor-default"
+                            className="w-full bg-slate-600 border border-slate-500 rounded-md shadow-sm py-1 px-3 text-gray-300 cursor-default"
                         />
                     )}
                     
                     {errors.pickupTime && <p className="mt-1 text-xs text-red-400">{errors.pickupTime}</p>}
                     
-                    <div className="flex items-center space-x-2 mt-2">
-                        <button type="button" onClick={() => handleQuickTimeSelect()} className="px-3 py-1 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">ihned</button>
-                        <button type="button" onClick={() => handleQuickTimeSelect(10)} className="px-3 py-1 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+10 min</button>
-                        <button type="button" onClick={() => handleQuickTimeSelect(20)} className="px-3 py-1 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+20 min</button>
-                        <button type="button" onClick={() => handleQuickTimeSelect(30)} className="px-3 py-1 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+30 min</button>
+                    <div className="flex items-center space-x-1 mt-1">
+                        <button type="button" onClick={() => handleQuickTimeSelect()} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">ihned</button>
+                        <button type="button" onClick={() => handleQuickTimeSelect(10)} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+10 min</button>
+                        <button type="button" onClick={() => handleQuickTimeSelect(20)} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+20 min</button>
+                        <button type="button" onClick={() => handleQuickTimeSelect(30)} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+30 min</button>
                     </div>
                 </div>
             </div>
             
             <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-300 mb-1">Poznámka (volitelné)</label>
+                <label htmlFor="notes" className="block text-xs font-medium text-gray-300 mb-1">Poznámka (volitelné)</label>
                 <textarea
                 id="notes"
                 name="notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                rows={1}
+                className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-1 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 placeholder="např. 5. patro, u zadního vchodu..."
                 ></textarea>
             </div>
@@ -316,7 +316,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
         <button
             type="submit"
             disabled={isLoading || (isOnCooldown && !isScheduled)}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-slate-800 disabled:bg-amber-800 disabled:cursor-not-allowed transition-colors mt-auto"
+            className="w-full flex justify-center py-1 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-slate-800 disabled:bg-amber-800 disabled:cursor-not-allowed transition-colors mt-auto"
         >
             {isScheduled 
                 ? 'Naplánovat jízdu' 

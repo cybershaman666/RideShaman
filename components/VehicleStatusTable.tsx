@@ -23,7 +23,7 @@ const FilterSelect: React.FC<{
             id={label}
             value={value}
             onChange={onChange}
-            className="block w-full pl-3 pr-10 py-2 text-sm bg-slate-700 border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+            className="block w-full pl-3 pr-10 py-1 text-sm bg-slate-700 border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
         >
             {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
@@ -81,15 +81,15 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
   ];
 
   return (
-    <div className="bg-slate-800 p-6 rounded-lg shadow-2xl flex flex-col h-full">
-        <div className="flex-shrink-0 flex justify-between items-center mb-4 border-b border-slate-700 pb-3 flex-wrap gap-4">
-            <h2 className="text-2xl font-semibold">Status Vozidel</h2>
-            <div className="flex items-center gap-x-4 flex-wrap gap-y-2 justify-end">
+    <div className="bg-slate-800 p-2 rounded-lg shadow-2xl flex flex-col h-full">
+        <div className="flex-shrink-0 flex justify-between items-center mb-1 border-b border-slate-700 pb-1 flex-wrap gap-2">
+            <h2 className="text-md font-semibold">Status Vozidel</h2>
+            <div className="flex items-center gap-x-2 flex-wrap gap-y-2 justify-end">
                 <div className="flex items-center gap-x-2">
                     <FilterSelect label="Filtrovat podle typu" value={typeFilter} onChange={e => setTypeFilter(e.target.value as 'all' | VehicleType)} options={typeOptions} />
                     <FilterSelect label="Filtrovat podle statusu" value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | VehicleStatus)} options={statusOptions} />
                 </div>
-                 <div className="flex items-center space-x-2 border-l border-slate-600 pl-4">
+                 <div className="flex items-center space-x-2 border-l border-slate-600 pl-2">
                     <label htmlFor="hide-inactive" className="text-sm font-medium text-gray-300 cursor-pointer">Skrýt neaktivní</label>
                     <button
                         onClick={() => setHideInactive(prev => !prev)}
@@ -104,7 +104,7 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                 </div>
                 <button
                     onClick={onAddVehicleClick}
-                    className="flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-slate-800 transition-colors"
+                    className="flex items-center space-x-2 px-3 py-1 text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-slate-800 transition-colors"
                     aria-label="Přidat nové vozidlo"
                 >
                     <PlusIcon />
@@ -112,14 +112,14 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                 </button>
             </div>
         </div>
-        <div className="flex-grow overflow-y-auto -mr-6 -ml-6 pr-6 pl-6">
+        <div className="flex-grow overflow-y-auto -mr-2 -ml-2 pr-2 pl-2">
             <table className="min-w-full divide-y divide-slate-700">
                 <thead className="bg-slate-800 sticky top-0">
                 <tr>
-                    <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-300 sm:pl-0">Vozidlo</th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Status</th>
-                    <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Poslední lokace</th>
-                    <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-300">
+                    <th scope="col" className="py-1 pl-4 pr-3 text-left text-sm font-semibold text-gray-300 sm:pl-0">Vozidlo</th>
+                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Status</th>
+                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Poslední lokace</th>
+                    <th scope="col" className="relative py-1 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-300">
                         Akce
                     </th>
                 </tr>
@@ -129,36 +129,36 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                     const driver = people.find(p => p.id === vehicle.driverId);
                     return (
                     <tr key={vehicle.id} className="hover:bg-slate-700/50 transition-colors">
-                    <td className="whitespace-nowrap py-5 pl-4 pr-3 text-sm sm:pl-0">
+                    <td className="whitespace-nowrap py-1 pl-4 pr-3 text-sm sm:pl-0">
                         <div className="flex items-center">
-                        <div className="h-11 w-11 flex-shrink-0">
-                             <CarIcon className={vehicle.type === VehicleType.Car ? "text-amber-400" : "text-gray-200"} size={44} />
+                        <div className="h-7 w-7 flex-shrink-0">
+                             <CarIcon className={vehicle.type === VehicleType.Car ? "text-amber-400" : "text-gray-200"} size={28} />
                         </div>
-                        <div className="ml-4">
-                            <div className="font-medium text-white">{vehicle.name}</div>
-                            <div className="mt-1 text-gray-400">{driver?.name || <span className="italic text-gray-500">Nepřiřazen</span>}</div>
-                            {driver?.phone && <a href={`tel:${driver.phone}`} className="mt-1 text-teal-400 text-xs font-mono hover:underline">{driver.phone}</a>}
-                            <div className="mt-1 font-mono text-xs text-gray-500 bg-slate-700 px-2 py-0.5 rounded w-fit">{vehicle.licensePlate}</div>
+                        <div className="ml-2">
+                            <div className="font-medium text-white text-sm">{vehicle.name}</div>
+                            <div className="text-gray-400 text-xs">{driver?.name || <span className="italic text-gray-500">Nepřiřazen</span>}</div>
+                            {driver?.phone && <a href={`tel:${driver.phone}`} className="text-teal-400 text-xs font-mono hover:underline">{driver.phone}</a>}
+                            <div className="mt-0.5 font-mono text-xs text-gray-500 bg-slate-700 px-1.5 py-0.5 rounded w-fit">{vehicle.licensePlate}</div>
                         </div>
                         </div>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-5 text-sm">
+                    <td className="whitespace-nowrap px-3 py-1 text-sm">
                         <div className="flex items-center">
                         <div className={`h-2.5 w-2.5 rounded-full mr-2 ${getStatusDotClass(vehicle.status)}`}></div>
-                        <span className={`${getStatusClass(vehicle.status)} capitalize`}>
+                        <span className={`${getStatusClass(vehicle.status)} capitalize text-xs`}>
                             {vehicle.status}
                             {(vehicle.status === VehicleStatus.Busy || vehicle.status === VehicleStatus.OutOfService) && vehicle.freeAt && <Countdown freeAt={vehicle.freeAt} />}
                         </span>
                         </div>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-5 text-sm text-gray-400">{vehicle.location}</td>
-                    <td className="relative whitespace-nowrap py-5 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                    <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">{vehicle.location}</td>
+                    <td className="relative whitespace-nowrap py-1 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                         <button
                         onClick={() => onEdit(vehicle)}
                         className="text-amber-400 hover:text-amber-300 transition-colors p-2 -m-2 rounded-full"
                         aria-label={`Upravit vozidlo ${vehicle.name}`}
                         >
-                        <EditIcon />
+                        <EditIcon size={18} />
                         </button>
                     </td>
                     </tr>

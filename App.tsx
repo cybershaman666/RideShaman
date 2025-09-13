@@ -626,7 +626,7 @@ const App: React.FC = () => {
   };
   
   return (
-    <div className="flex flex-col min-h-screen p-4 sm:p-6 lg:p-8">
+    <div className="flex flex-col p-4 sm:p-6 lg:p-8">
       <NotificationCenter notifications={notifications} onDismiss={handleDismissNotification} />
       <header className="flex flex-wrap justify-between items-center mb-6 gap-4 flex-shrink-0">
         <div className="flex items-center space-x-3">
@@ -651,7 +651,7 @@ const App: React.FC = () => {
       </header>
 
       <main className="relative flex-grow">
-        <div className={`grid h-full grid-cols-6 grid-rows-6 gap-6 transition-all duration-300 ${isEditMode ? 'opacity-50' : ''}`}>
+        <div className={`grid grid-cols-6 gap-6 transition-all duration-300 ${isEditMode ? 'opacity-50' : ''}`}>
            {layout.map(item => (<DashboardWidget key={item.id} layoutItem={item} isEditMode={isEditMode} onLayoutChange={handleLayoutChange}>{widgetMap[item.id]}</DashboardWidget>))}
         </div>
       </main>

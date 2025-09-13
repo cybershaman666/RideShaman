@@ -27,7 +27,7 @@ const SortableHeader: React.FC<{
   const direction = isSorted ? sortConfig.direction : null;
 
   return (
-     <th scope="col" className={`py-3.5 text-left text-sm font-semibold text-gray-300 ${className}`}>
+     <th scope="col" className={`py-1 text-left text-sm font-semibold text-gray-300 ${className}`}>
         <button
           onClick={() => onSort(sortKey)}
           className="flex items-center space-x-1 group"
@@ -62,9 +62,9 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
   };
 
   return (
-    <div className="bg-slate-800 p-6 rounded-lg shadow-2xl flex flex-col h-full">
-      <div className="flex-shrink-0 flex justify-between items-center mb-4 border-b border-slate-700 pb-3">
-        <h2 className="text-2xl font-semibold">Historie Jízd</h2>
+    <div className="bg-slate-800 p-2 rounded-lg shadow-2xl flex flex-col h-full">
+      <div className="flex-shrink-0 flex justify-between items-center mb-1 border-b border-slate-700 pb-1">
+        <h2 className="text-md font-semibold">Historie Jízd</h2>
         <div className="flex items-center space-x-3">
             <label htmlFor="show-completed" className="text-sm font-medium text-gray-300 cursor-pointer">
                 Zobrazit dokončené
@@ -93,28 +93,28 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
              {showCompleted ? "Zatím nebyly zaznamenány žádné jízdy." : "Žádné aktivní nebo zrušené jízdy."}
          </p>
       ) : (
-        <div className="flex-grow overflow-y-auto -mr-6 -ml-6 pr-6 pl-6">
+        <div className="flex-grow overflow-y-auto -mr-2 -ml-2 pr-2 pl-2">
           <table className="min-w-full divide-y divide-slate-700">
             <thead className="bg-slate-800 sticky top-0 z-10">
               <tr>
                 <SortableHeader label="Čas" sortKey="timestamp" onSort={onSort} sortConfig={sortConfig} className="pl-4 pr-3 sm:pl-0" />
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Řidič</th>
+                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Řidič</th>
                 <SortableHeader label="Zákazník" sortKey="customerName" onSort={onSort} sortConfig={sortConfig} className="px-3" />
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Tel. číslo</th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Trasa</th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Cena</th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Status</th>
-                <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">SMS</th>
-                <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-300">Akce</th>
+                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Tel. číslo</th>
+                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Trasa</th>
+                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Cena</th>
+                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Status</th>
+                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">SMS</th>
+                <th scope="col" className="relative py-1 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-300">Akce</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {logs.map((log) => (
                 <tr key={log.id} className={`${log.status === RideStatus.Scheduled ? 'bg-sky-900/50' : ''} hover:bg-slate-700/50`}>
-                  <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-400 sm:pl-0">
+                  <td className="whitespace-nowrap py-1 pl-4 pr-3 text-sm text-gray-400 sm:pl-0">
                     {new Date(log.timestamp).toLocaleString('cs-CZ')}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm">
+                  <td className="whitespace-nowrap px-3 py-1 text-sm">
                     <div className="flex items-center">
                       {log.vehicleType && (
                         <div className={`${log.vehicleType === VehicleType.Car ? 'text-gray-400' : 'text-gray-200'} mr-3 flex-shrink-0`}>
@@ -127,24 +127,24 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                       </div>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">{log.customerName}</td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">{log.customerPhone}</td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 max-w-xs">
-                    <div className="flex flex-col">
-                      <span className="truncate" title={log.pickupAddress}><strong>Z:</strong> {log.pickupAddress}</span>
-                      <span className="truncate" title={log.destinationAddress}><strong>Do:</strong> {log.destinationAddress}</span>
-                      <span className="truncate text-teal-400 text-xs" title={log.pickupTime}><strong>Vyzvednout:</strong> {log.pickupTime}</span>
+                  <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">{log.customerName}</td>
+                  <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">{log.customerPhone}</td>
+                  <td className="px-3 py-1 text-sm text-gray-400 max-w-xs">
+                    <div className="flex flex-col max-h-12 overflow-hidden" title={`${log.pickupAddress} -> ${log.destinationAddress}`}>
+                      <span className="truncate"><strong>Z:</strong> {log.pickupAddress}</span>
+                      <span className="truncate"><strong>Do:</strong> {log.destinationAddress}</span>
+                      <span className="truncate text-teal-400 text-xs"><strong>Vyzvednout:</strong> {log.pickupTime}</span>
                       {log.notes && (
-                        <span className="truncate text-yellow-300 text-xs mt-1" title={log.notes}>
+                        <span className="truncate text-yellow-300 text-xs" title={log.notes}>
                           <strong>Pozn.:</strong> {log.notes}
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-white">
+                  <td className="whitespace-nowrap px-3 py-1 text-sm font-medium text-white">
                      {log.estimatedPrice ? `${log.estimatedPrice} Kč` : 'N/A'}
                   </td>
-                   <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400">
+                   <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">
                      <select
                         value={log.status}
                         onChange={(e) => onStatusChange(log.id, e.target.value as RideStatus)}
@@ -158,7 +158,7 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                         ))}
                     </select>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-4 text-sm">
+                  <td className="whitespace-nowrap px-3 py-1 text-sm">
                     <input
                       type="checkbox"
                       checked={log.smsSent}
@@ -167,7 +167,7 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                       aria-label={`Označit SMS jako odeslanou pro jízdu se zákazníkem ${log.customerName}`}
                     />
                   </td>
-                  <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                  <td className="relative whitespace-nowrap py-1 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                     <button
                       onClick={() => onEdit(log)}
                       className="text-amber-400 hover:text-amber-300 transition-colors p-2 -m-2 rounded-full"
