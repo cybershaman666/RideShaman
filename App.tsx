@@ -478,6 +478,12 @@ const App: React.FC = () => {
 
     setEditingRideLog(null);
   };
+
+  const handleDeleteRideLog = (logId: string) => {
+    if (window.confirm("Opravdu si přejete smazat tento záznam o jízdě? Tato akce je nevratná.")) {
+        setRideLog(prev => prev.filter(log => log.id !== logId));
+    }
+  };
   
   const handleRideStatusChange = (logId: string, newStatus: RideStatus) => {
     const logToUpdate = rideLog.find(log => log.id === logId);
@@ -610,7 +616,7 @@ const App: React.FC = () => {
   };
 
   const sortedRideLog = useMemo(() => {
-    const filtered = showCompletedRides ? [...rideLog] : rideLog.filter(log => log.status !== RideStatus.Completed);
+    const filtered = showCompletedRides ? [...rideLog] : rideLog.filter(log => log.status !== RideStatus.Completed && log.status !== RideStatus.Cancelled);
     const sorted = filtered.sort((a, b) => {
         if (sortConfig.key === 'timestamp') return a.timestamp - b.timestamp;
         return a.customerName.localeCompare(b.customerName, 'cs');
@@ -622,7 +628,7 @@ const App: React.FC = () => {
     dispatch: <DispatchFormComponent onSubmit={handleSubmitDispatch} onSchedule={handleScheduleRide} isLoading={isLoading} rideHistory={rideLog} cooldownTime={cooldown} onRoutePreview={handleRoutePreview} />,
     vehicles: <VehicleStatusTable vehicles={vehicles} people={people} onEdit={setEditingVehicle} onAddVehicleClick={() => setIsAddingVehicle(true)} />,
     map: <OpenStreetMap vehicles={vehicles} people={people} routeToPreview={routeToPreview} confirmedAssignment={assignmentResult} />,
-    rideLog: <RideLogTable logs={sortedRideLog} onSort={handleSort} sortConfig={sortConfig} onToggleSmsSent={handleToggleSmsSent} onEdit={setEditingRideLog} onStatusChange={handleRideStatusChange} showCompleted={showCompletedRides} onToggleShowCompleted={() => setShowCompletedRides(prev => !prev)} />,
+    rideLog: <RideLogTable logs={sortedRideLog} onSort={handleSort} sortConfig={sortConfig} onToggleSmsSent={handleToggleSmsSent} onEdit={setEditingRideLog} onStatusChange={handleRideStatusChange} onDelete={handleDeleteRideLog} showCompleted={showCompletedRides} onToggleShowCompleted={() => setShowCompletedRides(prev => !prev)} />,
   };
   
   return (

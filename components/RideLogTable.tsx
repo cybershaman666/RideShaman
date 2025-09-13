@@ -1,6 +1,6 @@
 import React from 'react';
 import { RideLog, VehicleType, RideStatus } from '../types';
-import { CarIcon, VanIcon, ArrowUpIcon, ArrowDownIcon, EditIcon } from './icons';
+import { CarIcon, VanIcon, ArrowUpIcon, ArrowDownIcon, EditIcon, TrashIcon } from './icons';
 
 interface RideLogTableProps {
   logs: RideLog[];
@@ -12,6 +12,7 @@ interface RideLogTableProps {
   onToggleSmsSent: (logId: string) => void;
   onEdit: (log: RideLog) => void;
   onStatusChange: (logId: string, newStatus: RideStatus) => void;
+  onDelete: (logId: string) => void;
   showCompleted: boolean;
   onToggleShowCompleted: () => void;
 }
@@ -44,7 +45,7 @@ const SortableHeader: React.FC<{
 };
 
 
-export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortConfig, onToggleSmsSent, onEdit, onStatusChange, showCompleted, onToggleShowCompleted }) => {
+export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortConfig, onToggleSmsSent, onEdit, onStatusChange, onDelete, showCompleted, onToggleShowCompleted }) => {
   const getStatusSelectClass = (status: RideStatus) => {
     const base = "w-full rounded-md border-0 py-1 pl-3 pr-8 text-xs font-medium focus:ring-2 focus:ring-inset focus:ring-amber-500 cursor-pointer transition-colors capitalize";
     switch (status) {
@@ -66,8 +67,8 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
       <div className="flex-shrink-0 flex justify-between items-center mb-1 border-b border-slate-700 pb-1">
         <h2 className="text-md font-semibold">Historie Jízd</h2>
         <div className="flex items-center space-x-3">
-            <label htmlFor="show-completed" className="text-sm font-medium text-gray-300 cursor-pointer">
-                Zobrazit dokončené
+            <label htmlFor="show-inactive" className="text-sm font-medium text-gray-300 cursor-pointer">
+                Zobrazit neaktivní
             </label>
             <button
                 onClick={onToggleShowCompleted}
@@ -77,7 +78,7 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                 } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-900`}
                 role="switch"
                 aria-checked={showCompleted}
-                id="show-completed"
+                id="show-inactive"
             >
                 <span
                 aria-hidden="true"
@@ -90,7 +91,7 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
       </div>
       {logs.length === 0 ? (
          <p className="text-gray-400 text-center py-4">
-             {showCompleted ? "Zatím nebyly zaznamenány žádné jízdy." : "Žádné aktivní nebo zrušené jízdy."}
+             {showCompleted ? "Zatím nebyly zaznamenány žádné jízdy." : "Žádné aktivní nebo naplánované jízdy."}
          </p>
       ) : (
         <div className="flex-grow overflow-y-auto -mr-2 -ml-2 pr-2 pl-2">
@@ -111,10 +112,10 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
             <tbody className="divide-y divide-slate-800">
               {logs.map((log) => (
                 <tr key={log.id} className={`${log.status === RideStatus.Scheduled ? 'bg-sky-900/50' : ''} hover:bg-slate-700/50`}>
-                  <td className="whitespace-nowrap py-1 pl-4 pr-3 text-sm text-gray-400 sm:pl-0">
+                  <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-400 sm:pl-0">
                     {new Date(log.timestamp).toLocaleString('cs-CZ')}
                   </td>
-                  <td className="whitespace-nowrap px-3 py-1 text-sm">
+                  <td className="whitespace-nowrap px-3 py-2 text-sm">
                     <div className="flex items-center">
                       {log.vehicleType && (
                         <div className={`${log.vehicleType === VehicleType.Car ? 'text-gray-400' : 'text-gray-200'} mr-3 flex-shrink-0`}>
@@ -127,10 +128,10 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                       </div>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">{log.customerName}</td>
-                  <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">{log.customerPhone}</td>
-                  <td className="px-3 py-1 text-sm text-gray-400 max-w-xs">
-                    <div className="flex flex-col max-h-12 overflow-hidden" title={`${log.pickupAddress} -> ${log.destinationAddress}`}>
+                  <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-400">{log.customerName}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-400">{log.customerPhone}</td>
+                  <td className="px-3 py-2 text-sm text-gray-400 max-w-xs">
+                    <div className="flex flex-col max-h-16 overflow-hidden" title={`${log.pickupAddress} -> ${log.destinationAddress}`}>
                       <span className="truncate"><strong>Z:</strong> {log.pickupAddress}</span>
                       <span className="truncate"><strong>Do:</strong> {log.destinationAddress}</span>
                       <span className="truncate text-teal-400 text-xs"><strong>Vyzvednout:</strong> {log.pickupTime}</span>
@@ -141,10 +142,10 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                       )}
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-1 text-sm font-medium text-white">
+                  <td className="whitespace-nowrap px-3 py-2 text-sm font-medium text-white">
                      {log.estimatedPrice ? `${log.estimatedPrice} Kč` : 'N/A'}
                   </td>
-                   <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">
+                   <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-400">
                      <select
                         value={log.status}
                         onChange={(e) => onStatusChange(log.id, e.target.value as RideStatus)}
@@ -158,7 +159,7 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                         ))}
                     </select>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-1 text-sm">
+                  <td className="whitespace-nowrap px-3 py-2 text-sm">
                     <input
                       type="checkbox"
                       checked={log.smsSent}
@@ -167,13 +168,20 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                       aria-label={`Označit SMS jako odeslanou pro jízdu se zákazníkem ${log.customerName}`}
                     />
                   </td>
-                  <td className="relative whitespace-nowrap py-1 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                  <td className="relative whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                     <button
                       onClick={() => onEdit(log)}
                       className="text-amber-400 hover:text-amber-300 transition-colors p-2 -m-2 rounded-full"
                       aria-label={`Upravit jízdu se zákazníkem ${log.customerName}`}
                     >
                       <EditIcon />
+                    </button>
+                    <button
+                      onClick={() => onDelete(log.id)}
+                      className="text-gray-500 hover:text-red-500 transition-colors p-2 -m-2 ml-1 rounded-full"
+                      aria-label={`Smazat jízdu se zákazníkem ${log.customerName}`}
+                    >
+                      <TrashIcon size={18} />
                     </button>
                   </td>
                 </tr>
