@@ -24,6 +24,13 @@
       "language": "Sprache",
       "aiMode": "KI-Modus"
     },
+    "visibility": {
+      "title": "Widget-Sichtbarkeit",
+      "dispatch": "Dispositionsformular",
+      "vehicles": "Fahrzeugstatus",
+      "map": "Karte",
+      "rideLog": "Fahrtenbuch"
+    },
     "layout": {
       "title": "Layout",
       "editLayout": "Layout bearbeiten",
@@ -36,7 +43,9 @@
       "save": "Daten speichern",
       "load": "Daten laden",
       "exportCsv": "Als CSV exportieren",
-      "confirmLoad": "Das Laden neuer Daten überschreibt die aktuellen Daten. Möchten Sie fortfahren?"
+      "confirmLoad": "Das Laden neuer Daten überschreibt die aktuellen Daten. Möchten Sie fortfahren?",
+      "clearHistory": "Fahrtenbuch leeren",
+      "confirmClearHistory": "Möchten Sie das gesamte Fahrtenbuch WIRKLICH leeren? Diese Aktion ist unumkehrbar."
     }
   },
   "dispatch": {
@@ -209,7 +218,9 @@
     "rideScheduled": "Die Fahrt wurde geplant und zur Liste hinzugefügt.",
     "noRidesToExport": "Das Fahrtenbuch ist leer, es gibt nichts zu exportieren.",
     "dataLoadedSuccess": "Daten wurden erfolgreich geladen.",
-    "dataLoadedError": "Daten konnten nicht geladen werden. Die Datei ist beschädigt oder hat ein ungültiges Format."
+    "dataLoadedError": "Daten konnten nicht geladen werden. Die Datei ist beschädigt oder hat ein ungültiges Format.",
+    "clearHistoryAfterExport": "Daten erfolgreich exportiert. Möchten Sie das Fahrtenbuch jetzt leeren?",
+    "noRidesToClear": "Das Fahrtenbuch ist bereits leer."
   },
   "people": {
     "title": "Personen verwalten",

@@ -24,6 +24,13 @@
       "language": "Jazyk",
       "aiMode": "Režim AI"
     },
+    "visibility": {
+      "title": "Viditelnost widgetů",
+      "dispatch": "Formulář pro zadání",
+      "vehicles": "Status vozidel",
+      "map": "Mapa",
+      "rideLog": "Historie jízd"
+    },
     "layout": {
       "title": "Rozložení",
       "editLayout": "Upravit rozložení",
@@ -36,7 +43,9 @@
       "save": "Uložit data",
       "load": "Načíst data",
       "exportCsv": "Exportovat do CSV",
-      "confirmLoad": "Načtením dat přepíšete aktuální data. Chcete pokračovat?"
+      "confirmLoad": "Načtením dat přepíšete aktuální data. Chcete pokračovat?",
+      "clearHistory": "Vyčistit historii jízd",
+      "confirmClearHistory": "OPRAVDU chcete vyčistit celou historii jízd? Tato akce je nevratná."
     }
   },
   "dispatch": {
@@ -209,7 +218,9 @@
     "rideScheduled": "Jízda byla naplánována a přidána do seznamu.",
     "noRidesToExport": "Historie jízd je prázdná, není co exportovat.",
     "dataLoadedSuccess": "Data byla úspěšně načtena.",
-    "dataLoadedError": "Nepodařilo se načíst data. Soubor je poškozený nebo má neplatný formát."
+    "dataLoadedError": "Nepodařilo se načíst data. Soubor je poškozený nebo má neplatný formát.",
+    "clearHistoryAfterExport": "Data byla úspěšně exportována. Chcete nyní vyčistit historii jízd?",
+    "noRidesToClear": "Historie jízd je již prázdná."
   },
   "people": {
     "title": "Správa osob",

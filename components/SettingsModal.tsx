@@ -1,7 +1,8 @@
 import React from 'react';
-import { CloseIcon, UploadIcon, DownloadIcon, CsvIcon, UndoIcon } from './icons';
+import { CloseIcon, UploadIcon, DownloadIcon, CsvIcon, UndoIcon, TrashIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
 import { AiToggle } from './AiToggle';
+import type { WidgetId } from '../types';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -14,15 +15,40 @@ interface SettingsModalProps {
   onSaveData: () => void;
   onLoadData: () => void;
   onExportCsv: () => void;
+  onClearRideHistory: () => void;
+  widgetVisibility: Record<WidgetId, boolean>;
+  onWidgetVisibilityChange: (widgetId: WidgetId, isVisible: boolean) => void;
 }
+
+const VisibilityToggle: React.FC<{
+  label: string;
+  isChecked: boolean;
+  onToggle: () => void;
+}> = ({ label, isChecked, onToggle }) => (
+  <div className="flex justify-between items-center bg-slate-700/50 p-3 rounded-lg">
+    <label className="text-gray-200 cursor-pointer" onClick={onToggle}>{label}</label>
+    <button
+      onClick={onToggle}
+      type="button"
+      className={`${isChecked ? 'bg-amber-600' : 'bg-slate-600'} relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-800`}
+      role="switch"
+      aria-checked={isChecked}
+    >
+      <span aria-hidden="true" className={`${isChecked ? 'translate-x-5' : 'translate-x-0'} pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`} />
+    </button>
+  </div>
+);
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen, onClose, isAiEnabled, onToggleAi, isEditMode, onToggleEditMode,
-  onResetLayout, onSaveData, onLoadData, onExportCsv
+  onResetLayout, onSaveData, onLoadData, onExportCsv, onClearRideHistory,
+  widgetVisibility, onWidgetVisibilityChange
 }) => {
   const { t, language, changeLanguage } = useTranslation();
 
   if (!isOpen) return null;
+  
+  const widgetIds: WidgetId[] = ['dispatch', 'vehicles', 'map', 'rideLog'];
 
   return (
     <div
@@ -61,6 +87,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span className="text-gray-200">{t('settings.general.aiMode')}</span>
                 <AiToggle isEnabled={isAiEnabled} onToggle={onToggleAi} />
               </div>
+            </div>
+          </section>
+
+          {/* Visibility Settings */}
+          <section>
+            <h3 className="text-lg font-medium text-amber-400 mb-4">{t('settings.visibility.title')}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {widgetIds.map(id => (
+                 <VisibilityToggle 
+                    key={id}
+                    label={t(`settings.visibility.${id}`)}
+                    isChecked={widgetVisibility[id]}
+                    onToggle={() => onWidgetVisibilityChange(id, !widgetVisibility[id])}
+                 />
+              ))}
             </div>
           </section>
 
@@ -110,6 +151,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               >
                 <CsvIcon />
                 <span>{t('settings.data.exportCsv')}</span>
+              </button>
+              <button
+                onClick={onClearRideHistory}
+                className="col-span-1 sm:col-span-3 flex items-center justify-center space-x-2 px-3 py-2 text-sm font-medium rounded-md shadow-sm bg-red-800 text-red-100 hover:bg-red-700 transition-colors"
+              >
+                <TrashIcon />
+                <span>{t('settings.data.clearHistory')}</span>
               </button>
             </div>
           </section>

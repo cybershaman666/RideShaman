@@ -65,6 +65,13 @@ const DEFAULT_LAYOUT: LayoutConfig = [
     { id: 'rideLog', colStart: 1, colSpan: 6, rowStart: 4, rowSpan: 3 },
 ];
 
+const DEFAULT_WIDGET_VISIBILITY: Record<WidgetId, boolean> = {
+    dispatch: true,
+    vehicles: true,
+    map: true,
+    rideLog: true,
+};
+
 export const DEFAULT_TARIFF: Tariff = {
   startingFee: 50,
   pricePerKmCar: 40,
@@ -196,6 +203,17 @@ const App: React.FC = () => {
         return DEFAULT_LAYOUT;
     }
   });
+
+  const [widgetVisibility, setWidgetVisibility] = useState<Record<WidgetId, boolean>>(() => {
+    try {
+        const savedVisibility = localStorage.getItem('rapid-dispatch-widget-visibility');
+        return savedVisibility ? JSON.parse(savedVisibility) : DEFAULT_WIDGET_VISIBILITY;
+    } catch {
+        return DEFAULT_WIDGET_VISIBILITY;
+    }
+  });
+
+
   const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -236,6 +254,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('rapid-dispatch-tariff', JSON.stringify(tariff));
   }, [tariff]);
+
+  useEffect(() => {
+    localStorage.setItem('rapid-dispatch-widget-visibility', JSON.stringify(widgetVisibility));
+  }, [widgetVisibility]);
 
 
   // Cooldown timer effect
@@ -572,6 +594,9 @@ const App: React.FC = () => {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+    if (rideLog.length > 0 && window.confirm(t('notifications.clearHistoryAfterExport'))) {
+        setRideLog([]);
+    }
   };
 
   const escapeCsvCell = (cell: any): string => {
@@ -628,6 +653,9 @@ const App: React.FC = () => {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+    if (window.confirm(t('notifications.clearHistoryAfterExport'))) {
+        setRideLog([]);
+    }
   };
 
   const handleLoadData = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -668,6 +696,21 @@ const App: React.FC = () => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  const handleClearRideHistory = useCallback(() => {
+    if (rideLog.length > 0 && window.confirm(t('settings.data.confirmClearHistory'))) {
+      setRideLog([]);
+    } else if (rideLog.length === 0) {
+      alert(t('notifications.noRidesToClear'));
+    }
+  }, [rideLog, t]);
+
+  const handleWidgetVisibilityChange = (widgetId: WidgetId, isVisible: boolean) => {
+    setWidgetVisibility(prev => ({
+        ...prev,
+        [widgetId]: isVisible
+    }));
+  };
+
   const sortedRideLog = useMemo(() => {
     const filtered = showCompletedRides ? [...rideLog] : rideLog.filter(log => log.status !== RideStatus.Completed && log.status !== RideStatus.Cancelled);
     const sorted = filtered.sort((a, b) => {
@@ -683,6 +726,8 @@ const App: React.FC = () => {
     map: <OpenStreetMap vehicles={vehicles} people={people} routeToPreview={routeToPreview} confirmedAssignment={assignmentResult} />,
     rideLog: <RideLogTable logs={sortedRideLog} onSort={handleSort} sortConfig={sortConfig} onToggleSmsSent={handleToggleSmsSent} onEdit={setEditingRideLog} onStatusChange={handleRideStatusChange} onDelete={handleDeleteRideLog} showCompleted={showCompletedRides} onToggleShowCompleted={() => setShowCompletedRides(prev => !prev)} />,
   };
+
+  const visibleLayout = layout.filter(item => widgetVisibility[item.id]);
   
   return (
     <div className="flex flex-col p-4 sm:p-6 lg:p-8">
@@ -706,7 +751,7 @@ const App: React.FC = () => {
 
       <main className="relative flex-grow">
         <div className={`grid grid-cols-6 gap-6 transition-all duration-300 ${isEditMode ? 'opacity-50' : ''}`}>
-           {layout.map(item => (<DashboardWidget key={item.id} layoutItem={item} isEditMode={isEditMode} onLayoutChange={handleLayoutChange}>{widgetMap[item.id]}</DashboardWidget>))}
+           {visibleLayout.map(item => (<DashboardWidget key={item.id} layoutItem={item} isEditMode={isEditMode} onLayoutChange={handleLayoutChange}>{widgetMap[item.id]}</DashboardWidget>))}
         </div>
       </main>
       
@@ -739,6 +784,9 @@ const App: React.FC = () => {
           onSaveData={handleSaveData}
           onLoadData={triggerLoadFile}
           onExportCsv={handleExportCsv}
+          onClearRideHistory={handleClearRideHistory}
+          widgetVisibility={widgetVisibility}
+          onWidgetVisibilityChange={handleWidgetVisibilityChange}
         />
       )}
       

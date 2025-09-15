@@ -24,6 +24,13 @@
       "language": "Language",
       "aiMode": "AI Mode"
     },
+    "visibility": {
+      "title": "Widget Visibility",
+      "dispatch": "Dispatch Form",
+      "vehicles": "Vehicle Status",
+      "map": "Map",
+      "rideLog": "Ride History"
+    },
     "layout": {
       "title": "Layout",
       "editLayout": "Edit Layout",
@@ -36,7 +43,9 @@
       "save": "Save Data",
       "load": "Load Data",
       "exportCsv": "Export to CSV",
-      "confirmLoad": "Loading new data will overwrite current data. Do you want to continue?"
+      "confirmLoad": "Loading new data will overwrite current data. Do you want to continue?",
+      "clearHistory": "Clear Ride History",
+      "confirmClearHistory": "Are you SURE you want to clear the entire ride history? This action is irreversible."
     }
   },
   "dispatch": {
@@ -209,7 +218,9 @@
     "rideScheduled": "The ride has been scheduled and added to the list.",
     "noRidesToExport": "Ride history is empty, nothing to export.",
     "dataLoadedSuccess": "Data was loaded successfully.",
-    "dataLoadedError": "Failed to load data. The file is corrupt or has an invalid format."
+    "dataLoadedError": "Failed to load data. The file is corrupt or has an invalid format.",
+    "clearHistoryAfterExport": "Data successfully exported. Do you want to clear the ride history now?",
+    "noRidesToClear": "The ride history is already empty."
   },
   "people": {
     "title": "Manage People",
