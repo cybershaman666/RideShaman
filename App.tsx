@@ -3,7 +3,7 @@ import { DispatchFormComponent } from './components/DispatchForm';
 import { VehicleStatusTable } from './components/VehicleStatusTable';
 import { AssignmentResult } from './components/AssignmentResult';
 import { Vehicle, RideRequest, AssignmentResultData, VehicleStatus, VehicleType, ErrorResult, RideLog, RideStatus, LayoutConfig, LayoutItem, Notification, Person, PersonRole, WidgetId, Tariff, FlatRateRule, AssignmentAlternative, MessagingApp } from './types';
-import { findBestVehicle, generateSms } from './services/dispatchService';
+import { findBestVehicle, generateSms, generateNavigationUrl } from './services/dispatchService';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ShamanIcon, SettingsIcon, PhoneIcon, PriceTagIcon, BarChartIcon } from './components/icons';
 import { EditVehicleModal } from './components/EditVehicleModal';
@@ -411,11 +411,12 @@ const App: React.FC = () => {
     const destination = finalStops[finalStops.length - 1];
     
     if (!isAiEnabled) {
+        const navigationUrl = generateNavigationUrl(chosenVehicle.location, finalStops);
         setManualAssignmentDetails({ 
             rideRequest: assignmentResult!.rideRequest, 
             vehicle: chosenVehicle,
             rideDuration: rideDuration || 30,
-            sms: generateSms({ ...assignmentResult!.rideRequest, stops: finalStops }, t),
+            sms: generateSms({ ...assignmentResult!.rideRequest, stops: finalStops }, t, navigationUrl),
             estimatedPrice: option.estimatedPrice
         });
         return;
@@ -555,8 +556,9 @@ const App: React.FC = () => {
     
     // Show SMS preview if a scheduled ride is dispatched
     if (originalLog && originalLog.status === RideStatus.Scheduled && updatedLog.status === RideStatus.OnTheWay && updatedLog.vehicleId) {
-        const smsText = generateSms(updatedLog, t);
         const assignedVehicle = vehicles.find(v => v.id === updatedLog.vehicleId);
+        const navigationUrl = assignedVehicle ? generateNavigationUrl(assignedVehicle.location, updatedLog.stops) : undefined;
+        const smsText = generateSms(updatedLog, t, navigationUrl);
         const driver = people.find(p => p.id === assignedVehicle?.driverId);
         setSmsToPreview({ 
             sms: smsText, 

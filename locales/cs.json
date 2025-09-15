@@ -323,7 +323,8 @@
       "pickupTime": "Vyzvednout",
       "pickupASAP": "co nejdříve",
       "note": "Poznámka",
-      "route": "Trasa"
+      "route": "Trasa",
+      "navigation": "Navigace"
   },
   "csv": {
     "timestamp": "Čas záznamu",

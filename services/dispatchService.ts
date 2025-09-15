@@ -11,7 +11,7 @@ const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY! });
 /**
  * Generates an SMS message for the driver in the selected language.
  */
-export function generateSms(ride: RideRequest | RideLog, t: (key: string, params?: any) => string): string {
+export function generateSms(ride: RideRequest | RideLog, t: (key: string, params?: any) => string, navigationUrl?: string): string {
   let formattedPickupTime = ride.pickupTime;
   
   if (ride.pickupTime === 'ihned') {
@@ -23,11 +23,19 @@ export function generateSms(ride: RideRequest | RideLog, t: (key: string, params
     formattedPickupTime = `${hours}:${minutes}`;
   }
 
-  const stopsText = ride.stops.map((stop, index) => `${index + 1}. ${stop}`).join(', ');
+  const stopsText = ride.stops.map((stop, index) => `${index + 1}. ${stop}`).join(' -> ');
 
-  const baseSms = `${t('sms.route')}: ${stopsText}. ${t('sms.name')}: ${ride.customerName}, ${t('sms.phone')}: ${ride.customerPhone}, ${t('sms.passengers')}: ${ride.passengers}, ${t('sms.pickupTime')}: ${formattedPickupTime}`;
+  let baseSms = `${t('sms.route')}: ${stopsText}. ${t('sms.name')}: ${ride.customerName}, ${t('sms.phone')}: ${ride.customerPhone}, ${t('sms.passengers')}: ${ride.passengers}, ${t('sms.pickupTime')}: ${formattedPickupTime}`;
   
-  return ride.notes ? `${baseSms}, ${t('sms.note')}: ${ride.notes}` : baseSms;
+  if (ride.notes) {
+    baseSms = `${baseSms}, ${t('sms.note')}: ${ride.notes}`;
+  }
+
+  if (navigationUrl && navigationUrl !== 'https://maps.google.com') {
+    baseSms += `\n${t('sms.navigation')}: ${navigationUrl}`;
+  }
+  
+  return baseSms;
 }
 
 /**
@@ -58,15 +66,10 @@ export function generateShareLink(app: AppType, phone: string, text: string): st
 export function generateNavigationUrl(driverLocation: string, stops: string[]): string {
     if (!driverLocation || stops.length === 0) return 'https://maps.google.com';
     
-    const waypoints = stops.slice(0, -1); // All stops except the last one are waypoints
-    const destination = stops.slice(-1)[0]; // The last stop is the final destination
+    const allStops = [driverLocation, ...stops];
 
     const url = new URL('https://www.google.com/maps/dir/');
-    url.pathname += `${encodeURIComponent(driverLocation)}/`;
-    if (waypoints.length > 0) {
-      url.pathname += `${waypoints.map(encodeURIComponent).join('/')}/`;
-    }
-    url.pathname += `${encodeURIComponent(destination)}`;
+    url.pathname += allStops.map(s => encodeURIComponent(s)).join('/');
     
     return url.toString();
 }

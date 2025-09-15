@@ -72,14 +72,14 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   
-  const smsText = result ? generateSms({ ...result.rideRequest, stops: result.optimizedStops || result.rideRequest.stops }, t) : '';
   const finalStops = result?.optimizedStops || result?.rideRequest.stops || [];
   const vehicleLocation = result?.vehicle.location;
+  const navigationUrl = generateNavigationUrl(vehicleLocation || '', finalStops);
+  const smsText = result ? generateSms({ ...result.rideRequest, stops: finalStops }, t, navigationUrl) : '';
   const driver = result ? people.find(p => p.id === result.vehicle.driverId) : null;
   const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
   const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', smsText);
-  const navigationUrl = generateNavigationUrl(vehicleLocation || '', finalStops);
-
+  
   const handleCopy = () => {
     if (smsText) {
       navigator.clipboard.writeText(smsText).then(() => {

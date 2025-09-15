@@ -141,9 +141,9 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, vehicles, peop
                 const vehicle = vehicles.find(v => v.id === log.vehicleId);
                 const driver = vehicle ? people.find(p => p.id === vehicle.driverId) : null;
                 const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
-                const smsText = generateSms(log, t);
-                const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', smsText);
                 const navigationUrl = generateNavigationUrl(vehicle?.location || '', log.stops);
+                const smsText = generateSms(log, t, navigationUrl);
+                const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', smsText);
                 
                 return (
                 <tr key={log.id} className={`${log.status === RideStatus.Scheduled ? 'bg-sky-900/50' : ''} hover:bg-slate-700/50`}>

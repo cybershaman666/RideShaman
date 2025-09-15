@@ -323,7 +323,8 @@
     "pickupTime": "Abholung",
     "pickupASAP": "sofort",
     "note": "Notiz",
-    "route": "Route"
+    "route": "Route",
+    "navigation": "Navigation"
   },
   "csv": {
     "timestamp": "Zeitstempel",
