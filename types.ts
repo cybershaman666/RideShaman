@@ -41,6 +41,13 @@ export interface Vehicle {
   driverId: number | null; // Link to a Person
   // Timestamp for when the vehicle becomes free
   freeAt?: number; 
+  // New vehicle management fields
+  mileage?: number;
+  serviceInterval?: number; // in km
+  lastServiceMileage?: number; // in km
+  technicalInspectionExpiry?: string; // YYYY-MM-DD
+  vignetteExpiry?: string; // YYYY-MM-DD
+  vehicleNotes?: string;
 }
 
 export interface RideRequest {

@@ -21,12 +21,16 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, peo
     setFormData(vehicle);
   }, [vehicle]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
       let finalValue: any = value;
-      if (name === 'capacity' || name === 'driverId') {
-        finalValue = value ? parseInt(value, 10) : null;
+      const numericFields = ['capacity', 'mileage', 'serviceInterval', 'lastServiceMileage'];
+      if (numericFields.includes(name)) {
+        finalValue = value ? parseInt(value, 10) : 0;
+      }
+      if (name === 'driverId') {
+          finalValue = value ? parseInt(value, 10) : null;
       }
       
       const newFormData = { ...prev, [name]: finalValue };
@@ -68,7 +72,7 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, peo
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label="Zavřít"><CloseIcon /></button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div>
               <label htmlFor="driverId" className="block text-sm font-medium text-gray-300 mb-1">
                 Přiřazený řidič
@@ -110,6 +114,37 @@ export const EditVehicleModal: React.FC<EditVehicleModalProps> = ({ vehicle, peo
                <div>
                 <label htmlFor="capacity" className="block text-sm font-medium text-gray-300 mb-1">Kapacita</label>
                 <input type="number" id="capacity" name="capacity" value={formData.capacity} onChange={handleChange} min="1" className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
+              </div>
+            </div>
+             <div className="border-t border-slate-700 pt-4">
+              <h3 className="text-md font-semibold text-gray-200 mb-3">Servisní údaje</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="mileage" className="block text-sm font-medium text-gray-300 mb-1">Stav km</label>
+                  <input type="number" name="mileage" id="mileage" value={formData.mileage || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
+                </div>
+                <div>
+                  <label htmlFor="serviceInterval" className="block text-sm font-medium text-gray-300 mb-1">Servisní interval (km)</label>
+                  <input type="number" name="serviceInterval" id="serviceInterval" value={formData.serviceInterval || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="lastServiceMileage" className="block text-sm font-medium text-gray-300 mb-1">Poslední servis (km)</label>
+                  <input type="number" name="lastServiceMileage" id="lastServiceMileage" value={formData.lastServiceMileage || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                 <div>
+                  <label htmlFor="technicalInspectionExpiry" className="block text-sm font-medium text-gray-300 mb-1">Platnost STK do</label>
+                  <input type="date" name="technicalInspectionExpiry" id="technicalInspectionExpiry" value={formData.technicalInspectionExpiry || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
+                </div>
+                <div>
+                  <label htmlFor="vignetteExpiry" className="block text-sm font-medium text-gray-300 mb-1">Platnost dálniční známky do</label>
+                  <input type="date" name="vignetteExpiry" id="vignetteExpiry" value={formData.vignetteExpiry || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
+                </div>
+              </div>
+              <div className="mt-4">
+                <label htmlFor="vehicleNotes" className="block text-sm font-medium text-gray-300 mb-1">Poznámky k vozidlu</label>
+                <textarea name="vehicleNotes" id="vehicleNotes" value={formData.vehicleNotes || ''} onChange={handleChange} rows={3} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
               </div>
             </div>
             {formData.status === VehicleStatus.OutOfService && (

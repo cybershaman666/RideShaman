@@ -39,18 +39,18 @@ const initialPeople: Person[] = [
     { id: 14, name: 'Lukáš', phone: '702 020 505', role: PersonRole.Dispatcher },
 ];
 
-// Initial mock data for vehicles, now referencing people by ID
+// Initial mock data for vehicles, now referencing people by ID and including new service fields
 const initialVehicles: Vehicle[] = [
-  { id: 1, name: 'Škoda Superb #1', driverId: 1, licensePlate: '3J2 1234', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Náměstí, Mikulov', capacity: 4 },
-  { id: 2, name: 'VW Passat #2', driverId: 2, licensePlate: '5B8 4567', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Dukelské náměstí, Hustopeče', capacity: 4 },
-  { id: 3, name: 'Toyota Camry #3', driverId: 3, licensePlate: '1AX 8910', type: VehicleType.Car, status: VehicleStatus.Busy, location: 'Svatý kopeček, Mikulov', capacity: 4, freeAt: Date.now() + 15 * 60 * 1000 },
-  { id: 4, name: 'Ford Transit VAN', driverId: 4, licensePlate: '8E1 1121', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Herbenova, Hustopeče', capacity: 8 },
-  { id: 5, name: 'Škoda Octavia #4', driverId: 5, licensePlate: '2CD 5678', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Brněnská, Hustopeče', capacity: 4 },
-  { id: 6, name: 'Hyundai i30 #5', driverId: 6, licensePlate: '3EF 9012', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Nádražní, Mikulov', capacity: 4 },
-  { id: 7, name: 'Renault Trafic VAN', driverId: 7, licensePlate: '4GH 3456', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Pavlov', capacity: 8 },
-  { id: 8, name: 'VW Caddy #6', driverId: 8, licensePlate: '5IJ 7890', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Zaječí', capacity: 4 },
-  { id: 9, name: 'Mercedes-Benz Vito', driverId: 9, licensePlate: '6KL 1234', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Klentnice', capacity: 8 },
-  { id: 10, name: 'Škoda Fabia #7', driverId: 10, licensePlate: '7MN 5678', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Sedlec', capacity: 4 },
+  { id: 1, name: 'Škoda Superb #1', driverId: 1, licensePlate: '3J2 1234', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Náměstí, Mikulov', capacity: 4, mileage: 150000, serviceInterval: 30000, lastServiceMileage: 145000, technicalInspectionExpiry: '2025-08-15', vignetteExpiry: '2025-01-31' },
+  { id: 2, name: 'VW Passat #2', driverId: 2, licensePlate: '5B8 4567', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Dukelské náměstí, Hustopeče', capacity: 4, mileage: 89000, serviceInterval: 30000, lastServiceMileage: 85000, technicalInspectionExpiry: '2024-11-20', vignetteExpiry: '2025-01-31' },
+  { id: 3, name: 'Toyota Camry #3', driverId: 3, licensePlate: '1AX 8910', type: VehicleType.Car, status: VehicleStatus.Busy, location: 'Svatý kopeček, Mikulov', capacity: 4, freeAt: Date.now() + 15 * 60 * 1000, mileage: 45000, serviceInterval: 15000, lastServiceMileage: 40000, technicalInspectionExpiry: '2026-03-10', vignetteExpiry: '2025-01-31' },
+  { id: 4, name: 'Ford Transit VAN', driverId: 4, licensePlate: '8E1 1121', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Herbenova, Hustopeče', capacity: 8, mileage: 210000, serviceInterval: 40000, lastServiceMileage: 205000, technicalInspectionExpiry: '2025-05-01', vignetteExpiry: '2025-01-31' },
+  { id: 5, name: 'Škoda Octavia #4', driverId: 5, licensePlate: '2CD 5678', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Brněnská, Hustopeče', capacity: 4, mileage: 119500, serviceInterval: 30000, lastServiceMileage: 90000, technicalInspectionExpiry: '2024-09-30', vignetteExpiry: '2025-01-31' },
+  { id: 6, name: 'Hyundai i30 #5', driverId: 6, licensePlate: '3EF 9012', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Nádražní, Mikulov', capacity: 4, mileage: 62000, serviceInterval: 20000, lastServiceMileage: 60000, technicalInspectionExpiry: '2025-10-01', vignetteExpiry: '2025-01-31' },
+  { id: 7, name: 'Renault Trafic VAN', driverId: 7, licensePlate: '4GH 3456', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Pavlov', capacity: 8, mileage: 135000, serviceInterval: 40000, lastServiceMileage: 120000, technicalInspectionExpiry: '2025-02-28', vignetteExpiry: '2025-01-31' },
+  { id: 8, name: 'VW Caddy #6', driverId: 8, licensePlate: '5IJ 7890', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Zaječí', capacity: 4, mileage: 95000, serviceInterval: 30000, lastServiceMileage: 90000, technicalInspectionExpiry: '2025-07-15', vignetteExpiry: '2025-01-31' },
+  { id: 9, name: 'Mercedes-Benz Vito', driverId: 9, licensePlate: '6KL 1234', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Klentnice', capacity: 8, mileage: 180000, serviceInterval: 50000, lastServiceMileage: 175000, technicalInspectionExpiry: '2026-01-10', vignetteExpiry: '2025-01-31' },
+  { id: 10, name: 'Škoda Fabia #7', driverId: 10, licensePlate: '7MN 5678', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Sedlec', capacity: 4, mileage: 78000, serviceInterval: 30000, lastServiceMileage: 70000, technicalInspectionExpiry: '2025-12-01', vignetteExpiry: '2025-01-31' },
 ];
 
 

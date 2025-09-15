@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Vehicle, Person } from '../types';
 import { VehicleStatus, VehicleType } from '../types';
-import { CarIcon, EditIcon, PlusIcon } from './icons';
+import { CarIcon, EditIcon, PlusIcon, WrenchIcon } from './icons';
 import { Countdown } from './Countdown';
 
 interface VehicleStatusTableProps {
@@ -118,7 +118,8 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                 <tr>
                     <th scope="col" className="py-1 pl-4 pr-3 text-left text-sm font-semibold text-gray-300 sm:pl-0">Vozidlo</th>
                     <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Status</th>
-                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Poslední lokace</th>
+                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Lokace</th>
+                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Upozornění</th>
                     <th scope="col" className="relative py-1 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-300">
                         Akce
                     </th>
@@ -127,6 +128,42 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                 <tbody className="divide-y divide-slate-800">
                 {filteredVehicles.map((vehicle) => {
                     const driver = people.find(p => p.id === vehicle.driverId);
+                    
+                    const warnings = [];
+                    // Check for service
+                    if (vehicle.mileage && vehicle.lastServiceMileage && vehicle.serviceInterval && vehicle.mileage >= vehicle.lastServiceMileage + vehicle.serviceInterval - 1000) {
+                        const kmOver = vehicle.mileage - (vehicle.lastServiceMileage + vehicle.serviceInterval);
+                        if (kmOver > 0) {
+                            warnings.push(`Servis po termínu o ${kmOver} km.`);
+                        } else {
+                            const kmToService = (vehicle.lastServiceMileage + vehicle.serviceInterval) - vehicle.mileage;
+                            warnings.push(`Servis za ${kmToService} km.`);
+                        }
+                    }
+
+                    // Check for tech inspection
+                    if (vehicle.technicalInspectionExpiry) {
+                        const expiryDate = new Date(vehicle.technicalInspectionExpiry);
+                        const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                        if (expiryDate < new Date()) {
+                            warnings.push('STK propadlá!');
+                        } else if (expiryDate < thirtyDaysFromNow) {
+                            warnings.push(`STK končí ${expiryDate.toLocaleDateString('cs-CZ')}.`);
+                        }
+                    }
+                    
+                    // Check for vignette
+                    if (vehicle.vignetteExpiry) {
+                        const expiryDate = new Date(vehicle.vignetteExpiry);
+                        const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                        if (expiryDate < new Date()) {
+                            warnings.push('Dálniční známka propadlá!');
+                        } else if (expiryDate < thirtyDaysFromNow) {
+                            warnings.push(`Dálniční známka končí ${expiryDate.toLocaleDateString('cs-CZ')}.`);
+                        }
+                    }
+
+
                     return (
                     <tr key={vehicle.id} className="hover:bg-slate-700/50 transition-colors">
                     <td className="whitespace-nowrap py-1 pl-4 pr-3 text-sm sm:pl-0">
@@ -152,6 +189,14 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                         </div>
                     </td>
                     <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">{vehicle.location}</td>
+                    <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">
+                        {warnings.length > 0 && (
+                            <div className="flex items-center space-x-2" title={warnings.join('\n')}>
+                                <WrenchIcon className="text-yellow-400" size={18} />
+                                <span className="text-xs text-yellow-400">{warnings.length}</span>
+                            </div>
+                        )}
+                    </td>
                     <td className="relative whitespace-nowrap py-1 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                         <button
                         onClick={() => onEdit(vehicle)}
