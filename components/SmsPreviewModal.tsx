@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
-import { CloseIcon, ClipboardIcon, CheckCircleIcon, SendIcon } from './icons';
+import { CloseIcon, ClipboardIcon, CheckCircleIcon, ShareIcon, NavigationIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
+import type { MessagingApp } from '../types';
+import { generateShareLink, generateNavigationUrl } from '../services/dispatchService';
 
 interface SmsPreviewModalProps {
   sms: string;
   driverPhone?: string;
+  vehicleLocation?: string;
+  stops?: string[];
+  messagingApp: MessagingApp;
   onClose: () => void;
 }
 
-export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPhone, onClose }) => {
+export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPhone, vehicleLocation, stops, messagingApp, onClose }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const cleanDriverPhone = driverPhone?.replace(/\s/g, '');
+  
+  const shareLink = generateShareLink(messagingApp, cleanDriverPhone || '', sms);
+  const navigationUrl = generateNavigationUrl(vehicleLocation || '', stops || []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(sms).then(() => {
@@ -51,14 +59,23 @@ export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPho
             <p className="text-gray-200 whitespace-pre-wrap font-mono text-sm">{sms}</p>
             <div className="absolute top-2 right-2 flex items-center space-x-2">
               <a
-                href={`sms:${cleanDriverPhone}?body=${encodeURIComponent(sms)}`}
+                href={navigationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors hover:bg-slate-600 hover:text-white"
+                title={t('assignment.openNavigation')}
+              >
+                <NavigationIcon className="w-5 h-5"/>
+              </a>
+              <a
+                href={shareLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`p-2 rounded-md bg-slate-700 text-gray-300 transition-colors ${!cleanDriverPhone ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-600 hover:text-white'}`}
-                title={cleanDriverPhone ? t('smsPreview.sendViaApp') : t('smsPreview.noPhoneNumber')}
+                title={cleanDriverPhone ? t('assignment.sendVia', { app: messagingApp }) : t('smsPreview.noPhoneNumber')}
                 onClick={(e) => !cleanDriverPhone && e.preventDefault()}
               >
-                <SendIcon className="w-5 h-5"/>
+                <ShareIcon className="w-5 h-5"/>
               </a>
               <button
                 type="button"

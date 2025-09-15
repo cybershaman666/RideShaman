@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import type { AssignmentResultData, ErrorResult, Person, AssignmentAlternative } from '../types';
-import { CarIcon, AlertTriangleIcon, CheckCircleIcon, ClipboardIcon, SendIcon } from './icons';
+import type { AssignmentResultData, ErrorResult, Person, AssignmentAlternative, MessagingApp } from '../types';
+import { CarIcon, AlertTriangleIcon, CheckCircleIcon, ClipboardIcon, ShareIcon, NavigationIcon } from './icons';
 import { VehicleType } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
-import { generateSms } from '../services/dispatchService';
+import { generateSms, generateShareLink, generateNavigationUrl } from '../services/dispatchService';
 
 interface AssignmentResultProps {
   result: AssignmentResultData | null;
@@ -12,6 +12,7 @@ interface AssignmentResultProps {
   onConfirm: (option: AssignmentAlternative) => void;
   isAiMode: boolean;
   people: Person[];
+  messagingApp: MessagingApp;
   className?: string;
 }
 
@@ -67,11 +68,17 @@ const VehicleOption: React.FC<{
     )
 };
 
-export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, error, onClear, onConfirm, isAiMode, people, className }) => {
+export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, error, onClear, onConfirm, isAiMode, people, messagingApp, className }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   
   const smsText = result ? generateSms({ ...result.rideRequest, stops: result.optimizedStops || result.rideRequest.stops }, t) : '';
+  const finalStops = result?.optimizedStops || result?.rideRequest.stops || [];
+  const vehicleLocation = result?.vehicle.location;
+  const driver = result ? people.find(p => p.id === result.vehicle.driverId) : null;
+  const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
+  const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', smsText);
+  const navigationUrl = generateNavigationUrl(vehicleLocation || '', finalStops);
 
   const handleCopy = () => {
     if (smsText) {
@@ -111,11 +118,6 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
     ? [{ vehicle, eta, waitTime, estimatedPrice }, ...alternatives]
     : alternatives;
     
-  const driver = people.find(p => p.id === result.vehicle.driverId);
-  const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
-  const finalStops = optimizedStops || result.rideRequest.stops;
-
-
   return (
     <div className={`bg-slate-800 p-6 rounded-lg shadow-2xl animate-fade-in space-y-6 ${className || ''}`}>
         <div className="flex items-center justify-between border-b border-slate-700 pb-4">
@@ -161,25 +163,32 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
         </div>
 
 
-      {/* SMS Message - Only shown in AI mode */}
+      {/* Communication - Only shown in AI mode */}
       {isAiMode && smsText && (
         <div>
-            <h4 className="text-sm text-gray-400 font-medium mb-2">{t('assignment.smsSuggestion')}</h4>
+            <h4 className="text-sm text-gray-400 font-medium mb-2">{t('assignment.communication')}</h4>
             <div className="relative bg-slate-900 p-4 rounded-lg border border-slate-700">
             <p className="text-gray-200 whitespace-pre-wrap font-mono text-sm">{smsText}</p>
             <div className="absolute top-2 right-2 flex items-center space-x-2">
-                <button
-                    onClick={() => {
-                        if (driverPhoneNumber) {
-                            window.location.href = `sms:${driverPhoneNumber}?body=${encodeURIComponent(smsText)}`;
-                        }
-                    }}
-                    disabled={!driverPhoneNumber}
-                    className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors enabled:hover:bg-slate-600 enabled:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={driverPhoneNumber ? t('assignment.sendSmsApp') : t('assignment.noDriverAssigned')}
+                <a
+                  href={navigationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors enabled:hover:bg-slate-600 enabled:hover:text-white"
+                  title={t('assignment.openNavigation')}
                 >
-                    <SendIcon className="w-5 h-5"/>
-                </button>
+                  <NavigationIcon className="w-5 h-5" />
+                </a>
+                <a
+                  href={shareLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors enabled:hover:bg-slate-600 enabled:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={driverPhoneNumber ? t('assignment.sendVia', { app: messagingApp }) : t('assignment.noDriverAssigned')}
+                  onClick={(e) => !driverPhoneNumber && e.preventDefault()}
+                >
+                  <ShareIcon className="w-5 h-5"/>
+                </a>
                 <button
                     onClick={handleCopy}
                     className="p-2 rounded-md bg-slate-700 hover:bg-slate-600 text-gray-300 hover:text-white transition-colors"

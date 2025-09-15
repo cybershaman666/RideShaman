@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { RideRequest, Vehicle, AssignmentResultData, ErrorResult, AssignmentAlternative, Tariff, RideLog, FlatRateRule } from '../types';
-import { VehicleStatus, VehicleType } from '../types';
+import type { RideRequest, Vehicle, AssignmentResultData, ErrorResult, AssignmentAlternative, Tariff, RideLog, FlatRateRule, MessagingApp } from '../types';
+import { VehicleStatus, VehicleType, MessagingApp as AppType } from '../types';
 
 const GEMINI_API_KEY = process.env.API_KEY;
 if (!GEMINI_API_KEY) {
@@ -29,6 +29,48 @@ export function generateSms(ride: RideRequest | RideLog, t: (key: string, params
   
   return ride.notes ? `${baseSms}, ${t('sms.note')}: ${ride.notes}` : baseSms;
 }
+
+/**
+ * Generates a shareable link for various messaging apps.
+ */
+export function generateShareLink(app: AppType, phone: string, text: string): string {
+    const encodedText = encodeURIComponent(text);
+    const cleanPhone = phone.replace(/\s/g, '');
+
+    switch(app) {
+        case AppType.WhatsApp:
+            // The phone number needs to be in international format without '+' or '00' for wa.me links
+            const internationalPhone = cleanPhone.startsWith('420') ? cleanPhone : `420${cleanPhone}`;
+            return `https://wa.me/${internationalPhone}?text=${encodedText}`;
+        case AppType.Telegram:
+            // Telegram share link doesn't support phone numbers directly, it opens the share sheet.
+            return `tg://share/url?text=${encodedText}`;
+        case AppType.SMS:
+        default:
+            return `sms:${cleanPhone}?body=${encodedText}`;
+    }
+}
+
+/**
+ * Generates a Google Maps navigation URL for a multi-stop route.
+ * Starts from the driver's current location to the first stop, then through subsequent stops.
+ */
+export function generateNavigationUrl(driverLocation: string, stops: string[]): string {
+    if (!driverLocation || stops.length === 0) return 'https://maps.google.com';
+    
+    const waypoints = stops.slice(0, -1); // All stops except the last one are waypoints
+    const destination = stops.slice(-1)[0]; // The last stop is the final destination
+
+    const url = new URL('https://www.google.com/maps/dir/');
+    url.pathname += `${encodeURIComponent(driverLocation)}/`;
+    if (waypoints.length > 0) {
+      url.pathname += `${waypoints.map(encodeURIComponent).join('/')}/`;
+    }
+    url.pathname += `${encodeURIComponent(destination)}`;
+    
+    return url.toString();
+}
+
 
 // Simple in-memory cache for geocoding results
 const geocodeCache = new Map<string, { lat: number; lon: number }>();

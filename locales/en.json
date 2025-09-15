@@ -24,6 +24,10 @@
       "language": "Language",
       "aiMode": "AI Mode"
     },
+    "communication": {
+      "title": "Communication",
+      "preferredApp": "Preferred Messaging App"
+    },
     "visibility": {
       "title": "Widget Visibility",
       "dispatch": "Dispatch Form",
@@ -140,8 +144,10 @@
       "serviceDue": "Service due in {km} km.",
       "inspectionExpired": "Inspection expired!",
       "inspectionExpires": "Inspection expires on {date}.",
+      "inspectionExpiresSoon": "Inspection expires in {days} days!",
       "vignetteExpired": "Vignette expired!",
-      "vignetteExpires": "Vignette expires on {date}."
+      "vignetteExpires": "Vignette expires on {date}.",
+      "vignetteExpiresSoon": "Vignette expires in {days} days!"
     }
   },
   "assignment": {
@@ -154,8 +160,9 @@
     "errorTitle": "Error finding vehicle",
     "titleAI": "Ride Assignment Suggestion",
     "titleManual": "Manual Vehicle Selection",
-    "smsSuggestion": "SMS suggestion for driver",
-    "sendSmsApp": "Send via default app",
+    "communication": "Driver Communication",
+    "sendVia": "Send via {app}",
+    "openNavigation": "Open Navigation",
     "noDriverAssigned": "No driver assigned to this vehicle",
     "copyText": "Copy text",
     "optimizedRoute": "Optimized Route"
@@ -170,11 +177,10 @@
       "time": "Time",
       "driver": "Driver",
       "customer": "Customer",
-      "phone": "Phone",
       "route": "Route",
-      "price": "Price",
       "status": "Status",
       "sms": "SMS",
+      "dispatch": "Dispatch",
       "actions": "Actions",
       "awaitingAssignment": "Awaiting assignment",
       "from": "From",
@@ -281,9 +287,8 @@
     "noData": "No data for the selected period."
   },
   "smsPreview": {
-    "title": "SMS Ready for Driver",
+    "title": "Message Ready for Driver",
     "driverPhone": "Driver's Phone",
-    "sendViaApp": "Send via default app",
     "noPhoneNumber": "Driver's phone number is not available"
   },
   "manualAssignment": {

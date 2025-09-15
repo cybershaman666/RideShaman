@@ -2,13 +2,16 @@ import React from 'react';
 import { CloseIcon, UploadIcon, DownloadIcon, CsvIcon, UndoIcon, TrashIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
 import { AiToggle } from './AiToggle';
-import type { WidgetId } from '../types';
+import type { WidgetId, MessagingApp } from '../types';
+import { MessagingApp as AppType } from '../types';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   isAiEnabled: boolean;
   onToggleAi: () => void;
+  messagingApp: MessagingApp;
+  onMessagingAppChange: (app: MessagingApp) => void;
   isEditMode: boolean;
   onToggleEditMode: () => void;
   onResetLayout: () => void;
@@ -40,8 +43,8 @@ const VisibilityToggle: React.FC<{
 );
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
-  isOpen, onClose, isAiEnabled, onToggleAi, isEditMode, onToggleEditMode,
-  onResetLayout, onSaveData, onLoadData, onExportCsv, onClearRideHistory,
+  isOpen, onClose, isAiEnabled, onToggleAi, messagingApp, onMessagingAppChange,
+  isEditMode, onToggleEditMode, onResetLayout, onSaveData, onLoadData, onExportCsv, onClearRideHistory,
   widgetVisibility, onWidgetVisibilityChange
 }) => {
   const { t, language, changeLanguage } = useTranslation();
@@ -86,6 +89,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="flex justify-between items-center bg-slate-700/50 p-3 rounded-lg">
                 <span className="text-gray-200">{t('settings.general.aiMode')}</span>
                 <AiToggle isEnabled={isAiEnabled} onToggle={onToggleAi} />
+              </div>
+            </div>
+          </section>
+          
+          {/* Communication Settings */}
+          <section>
+            <h3 className="text-lg font-medium text-amber-400 mb-4">{t('settings.communication.title')}</h3>
+            <div className="space-y-4">
+               <div className="flex justify-between items-center bg-slate-700/50 p-3 rounded-lg">
+                <label htmlFor="messaging-app-select" className="text-gray-200">{t('settings.communication.preferredApp')}</label>
+                <select
+                  id="messaging-app-select"
+                  value={messagingApp}
+                  onChange={(e) => onMessagingAppChange(e.target.value as MessagingApp)}
+                  className="bg-slate-700 border border-slate-600 rounded-md py-1 px-3"
+                >
+                  {Object.values(AppType).map(app => (
+                    <option key={app} value={app}>{app}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </section>

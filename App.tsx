@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { DispatchFormComponent } from './components/DispatchForm';
 import { VehicleStatusTable } from './components/VehicleStatusTable';
 import { AssignmentResult } from './components/AssignmentResult';
-import { Vehicle, RideRequest, AssignmentResultData, VehicleStatus, VehicleType, ErrorResult, RideLog, RideStatus, LayoutConfig, LayoutItem, Notification, Person, PersonRole, WidgetId, Tariff, FlatRateRule, AssignmentAlternative } from './types';
+import { Vehicle, RideRequest, AssignmentResultData, VehicleStatus, VehicleType, ErrorResult, RideLog, RideStatus, LayoutConfig, LayoutItem, Notification, Person, PersonRole, WidgetId, Tariff, FlatRateRule, AssignmentAlternative, MessagingApp } from './types';
 import { findBestVehicle, generateSms } from './services/dispatchService';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ShamanIcon, SettingsIcon, PhoneIcon, PriceTagIcon, BarChartIcon } from './components/icons';
@@ -186,11 +186,17 @@ const App: React.FC = () => {
   const [isAddingVehicle, setIsAddingVehicle] = useState(false);
   const [editingRideLog, setEditingRideLog] = useState<RideLog | null>(null);
   const [manualAssignmentDetails, setManualAssignmentDetails] = useState<{rideRequest: RideRequest, vehicle: Vehicle, rideDuration: number, sms: string, estimatedPrice: number} | null>(null);
-  const [smsToPreview, setSmsToPreview] = useState<{ sms: string; driverPhone?: string } | null>(null);
+  const [smsToPreview, setSmsToPreview] = useState<{ sms: string; driverPhone?: string; vehicleLocation?: string; stops?: string[]; } | null>(null);
+
 
   const [isAiEnabled, setIsAiEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('rapid-dispatch-ai-enabled');
     return saved ? JSON.parse(saved) : true;
+  });
+  
+  const [messagingApp, setMessagingApp] = useState<MessagingApp>(() => {
+    const saved = localStorage.getItem('rapid-dispatch-messaging-app');
+    return saved ? JSON.parse(saved) as MessagingApp : MessagingApp.SMS;
   });
 
   const [cooldown, setCooldown] = useState(0);
@@ -246,6 +252,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('rapid-dispatch-ai-enabled', JSON.stringify(isAiEnabled));
   }, [isAiEnabled]);
+  
+  useEffect(() => {
+    localStorage.setItem('rapid-dispatch-messaging-app', JSON.stringify(messagingApp));
+  }, [messagingApp]);
   
   useEffect(() => {
     localStorage.setItem('rapid-dispatch-layout', JSON.stringify(layout));
@@ -548,7 +558,12 @@ const App: React.FC = () => {
         const smsText = generateSms(updatedLog, t);
         const assignedVehicle = vehicles.find(v => v.id === updatedLog.vehicleId);
         const driver = people.find(p => p.id === assignedVehicle?.driverId);
-        setSmsToPreview({ sms: smsText, driverPhone: driver?.phone });
+        setSmsToPreview({ 
+            sms: smsText, 
+            driverPhone: driver?.phone,
+            vehicleLocation: assignedVehicle?.location,
+            stops: updatedLog.stops,
+        });
     }
 
     setEditingRideLog(null);
@@ -584,7 +599,7 @@ const App: React.FC = () => {
   };
 
   const handleSaveData = () => {
-    const dataToSave = { vehicles, rideLog, people, tariff };
+    const dataToSave = { vehicles, rideLog, people, tariff, messagingApp };
     const jsonString = JSON.stringify(dataToSave, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -673,6 +688,9 @@ const App: React.FC = () => {
                 if (parsedData.tariff) {
                     setTariff(parsedData.tariff);
                 }
+                if (parsedData.messagingApp) {
+                    setMessagingApp(parsedData.messagingApp);
+                }
                 alert(t('notifications.dataLoadedSuccess'));
             } else {
                 throw new Error("Invalid data structure in JSON file.");
@@ -724,7 +742,7 @@ const App: React.FC = () => {
     dispatch: <DispatchFormComponent onSubmit={handleSubmitDispatch} onSchedule={handleScheduleRide} isLoading={isLoading} rideHistory={rideLog} cooldownTime={cooldown} onRoutePreview={handleRoutePreview} />,
     vehicles: <VehicleStatusTable vehicles={vehicles} people={people} onEdit={setEditingVehicle} onAddVehicleClick={() => setIsAddingVehicle(true)} />,
     map: <OpenStreetMap vehicles={vehicles} people={people} routeToPreview={routeToPreview} confirmedAssignment={assignmentResult} />,
-    rideLog: <RideLogTable logs={sortedRideLog} onSort={handleSort} sortConfig={sortConfig} onToggleSmsSent={handleToggleSmsSent} onEdit={setEditingRideLog} onStatusChange={handleRideStatusChange} onDelete={handleDeleteRideLog} showCompleted={showCompletedRides} onToggleShowCompleted={() => setShowCompletedRides(prev => !prev)} />,
+    rideLog: <RideLogTable logs={sortedRideLog} vehicles={vehicles} people={people} messagingApp={messagingApp} onSort={handleSort} sortConfig={sortConfig} onToggleSmsSent={handleToggleSmsSent} onEdit={setEditingRideLog} onStatusChange={handleRideStatusChange} onDelete={handleDeleteRideLog} showCompleted={showCompletedRides} onToggleShowCompleted={() => setShowCompletedRides(prev => !prev)} />,
   };
 
   const visibleLayout = layout.filter(item => widgetVisibility[item.id]);
@@ -758,8 +776,8 @@ const App: React.FC = () => {
       {(isLoading || assignmentResult || error) && (
            <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start pt-24 p-4 animate-fade-in overflow-y-auto">
               {isLoading && !assignmentResult && <LoadingSpinner text={t('loading.calculating')} />}
-              {assignmentResult && (<AssignmentResult result={assignmentResult} error={error} onClear={handleClearResult} onConfirm={handleConfirmAssignment} isAiMode={isAiEnabled} people={people} className="max-w-4xl w-full"/>)}
-              {error && !assignmentResult && (<AssignmentResult result={null} error={error} onClear={handleClearResult} onConfirm={() => {}} isAiMode={isAiEnabled} people={people} className="max-w-xl w-full"/>)}
+              {assignmentResult && (<AssignmentResult result={assignmentResult} error={error} onClear={handleClearResult} onConfirm={handleConfirmAssignment} isAiMode={isAiEnabled} people={people} messagingApp={messagingApp} className="max-w-4xl w-full"/>)}
+              {error && !assignmentResult && (<AssignmentResult result={null} error={error} onClear={handleClearResult} onConfirm={() => {}} isAiMode={isAiEnabled} people={people} messagingApp={messagingApp} className="max-w-xl w-full"/>)}
            </div>
       )}
 
@@ -767,17 +785,19 @@ const App: React.FC = () => {
       {editingVehicle && (<EditVehicleModal vehicle={editingVehicle} people={people} onSave={handleUpdateVehicle} onClose={() => setEditingVehicle(null)} onDelete={handleDeleteVehicle}/>)}
       {isAddingVehicle && (<AddVehicleModal onSave={handleAddVehicle} onClose={() => setIsAddingVehicle(false)}/>)}
       {editingRideLog && (<EditRideLogModal log={editingRideLog} vehicles={vehicles} people={people} onSave={handleUpdateRideLog} onClose={() => setEditingRideLog(null)}/>)}
-      {manualAssignmentDetails && (<ManualAssignmentModal details={manualAssignmentDetails} people={people} onConfirm={handleManualAssignmentConfirm} onClose={() => setManualAssignmentDetails(null)}/>)}
+      {manualAssignmentDetails && (<ManualAssignmentModal details={manualAssignmentDetails} people={people} onConfirm={handleManualAssignmentConfirm} onClose={() => setManualAssignmentDetails(null)} messagingApp={messagingApp} />)}
       {isPeopleModalOpen && (<ManagePeopleModal people={people} onAdd={handleAddPerson} onUpdate={handleUpdatePerson} onDelete={handleDeletePerson} onClose={() => setIsPeopleModalOpen(false)}/>)}
       {isTariffModalOpen && (<TariffSettingsModal initialTariff={tariff} onSave={setTariff} onClose={() => setIsTariffModalOpen(false)} />)}
       {isAnalyticsModalOpen && <AnalyticsModal rideLog={rideLog} vehicles={vehicles} onClose={() => setIsAnalyticsModalOpen(false)} />}
-      {smsToPreview && <SmsPreviewModal sms={smsToPreview.sms} driverPhone={smsToPreview.driverPhone} onClose={() => setSmsToPreview(null)} />}
+      {smsToPreview && <SmsPreviewModal {...smsToPreview} onClose={() => setSmsToPreview(null)} messagingApp={messagingApp} />}
       {isSettingsModalOpen && (
         <SettingsModal 
           isOpen={isSettingsModalOpen}
           onClose={() => setIsSettingsModalOpen(false)}
           isAiEnabled={isAiEnabled}
           onToggleAi={() => setIsAiEnabled(!isAiEnabled)}
+          messagingApp={messagingApp}
+          onMessagingAppChange={setMessagingApp}
           isEditMode={isEditMode}
           onToggleEditMode={() => setIsEditMode(!isEditMode)}
           onResetLayout={resetLayout}

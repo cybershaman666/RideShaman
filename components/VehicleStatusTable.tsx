@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Vehicle, Person } from '../types';
 import { VehicleStatus, VehicleType } from '../types';
-import { CarIcon, EditIcon, PlusIcon, WrenchIcon } from './icons';
+import { CarIcon, EditIcon, PlusIcon, WrenchIcon, AlertTriangleIcon } from './icons';
 import { Countdown } from './Countdown';
 import { useTranslation } from '../contexts/LanguageContext';
 
@@ -11,6 +11,8 @@ interface VehicleStatusTableProps {
   onEdit: (vehicle: Vehicle) => void;
   onAddVehicleClick: () => void;
 }
+
+type WarningLevel = 'info' | 'warning' | 'urgent';
 
 const FilterSelect: React.FC<{
     label: string;
@@ -131,39 +133,56 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                 {filteredVehicles.map((vehicle) => {
                     const driver = people.find(p => p.id === vehicle.driverId);
                     
-                    const warnings = [];
+                    const warnings: { text: string; level: WarningLevel }[] = [];
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
                     // Check for service
                     if (vehicle.mileage && vehicle.lastServiceMileage && vehicle.serviceInterval && vehicle.mileage >= vehicle.lastServiceMileage + vehicle.serviceInterval - 1000) {
                         const kmOver = vehicle.mileage - (vehicle.lastServiceMileage + vehicle.serviceInterval);
                         if (kmOver > 0) {
-                            warnings.push(t('vehicles.warnings.serviceOverdue', { km: kmOver }));
+                            warnings.push({ text: t('vehicles.warnings.serviceOverdue', { km: kmOver }), level: 'urgent' });
                         } else {
                             const kmToService = (vehicle.lastServiceMileage + vehicle.serviceInterval) - vehicle.mileage;
-                            warnings.push(t('vehicles.warnings.serviceDue', { km: kmToService }));
+                            warnings.push({ text: t('vehicles.warnings.serviceDue', { km: kmToService }), level: 'warning' });
                         }
                     }
 
                     // Check for tech inspection
                     if (vehicle.technicalInspectionExpiry) {
                         const expiryDate = new Date(vehicle.technicalInspectionExpiry);
-                        const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                        if (expiryDate < new Date()) {
-                            warnings.push(t('vehicles.warnings.inspectionExpired'));
-                        } else if (expiryDate < thirtyDaysFromNow) {
-                            warnings.push(t('vehicles.warnings.inspectionExpires', { date: expiryDate.toLocaleDateString() }));
+                        const diffTime = expiryDate.getTime() - today.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (diffDays < 0) {
+                           warnings.push({ text: t('vehicles.warnings.inspectionExpired'), level: 'urgent' });
+                        } else if (diffDays <= 5) {
+                            warnings.push({ text: t('vehicles.warnings.inspectionExpiresSoon', { days: diffDays }), level: 'urgent' });
+                        } else if (diffDays <= 30) {
+                            warnings.push({ text: t('vehicles.warnings.inspectionExpires', { date: expiryDate.toLocaleDateString() }), level: 'warning' });
                         }
                     }
                     
                     // Check for vignette
                     if (vehicle.vignetteExpiry) {
                         const expiryDate = new Date(vehicle.vignetteExpiry);
-                        const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-                        if (expiryDate < new Date()) {
-                            warnings.push(t('vehicles.warnings.vignetteExpired'));
-                        } else if (expiryDate < thirtyDaysFromNow) {
-                            warnings.push(t('vehicles.warnings.vignetteExpires', { date: expiryDate.toLocaleDateString() }));
+                        const diffTime = expiryDate.getTime() - today.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays < 0) {
+                            warnings.push({ text: t('vehicles.warnings.vignetteExpired'), level: 'urgent' });
+                        } else if (diffDays <= 5) {
+                            warnings.push({ text: t('vehicles.warnings.vignetteExpiresSoon', { days: diffDays }), level: 'urgent' });
+                        } else if (diffDays <= 30) {
+                            warnings.push({ text: t('vehicles.warnings.vignetteExpires', { date: expiryDate.toLocaleDateString() }), level: 'warning' });
                         }
                     }
+
+                    const highestSeverity = warnings.reduce((maxLevel, w) => {
+                        if (w.level === 'urgent') return 'urgent';
+                        if (w.level === 'warning' && maxLevel !== 'urgent') return 'warning';
+                        return maxLevel;
+                    }, 'info' as WarningLevel);
 
 
                     return (
@@ -193,9 +212,15 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                     <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">{vehicle.location}</td>
                     <td className="whitespace-nowrap px-3 py-1 text-sm text-gray-400">
                         {warnings.length > 0 && (
-                            <div className="flex items-center space-x-2" title={warnings.join('\n')}>
-                                <WrenchIcon className="text-yellow-400" size={18} />
-                                <span className="text-xs text-yellow-400">{warnings.length}</span>
+                            <div className="flex items-center space-x-2" title={warnings.map(w => w.text).join('\n')}>
+                                {highestSeverity === 'urgent' ? (
+                                    <AlertTriangleIcon className="text-red-500" size={18} />
+                                ) : (
+                                    <WrenchIcon className="text-yellow-400" size={18} />
+                                )}
+                                <span className={`text-xs font-semibold ${highestSeverity === 'urgent' ? 'text-red-500' : 'text-yellow-400'}`}>
+                                    {warnings.length}
+                                </span>
                             </div>
                         )}
                     </td>

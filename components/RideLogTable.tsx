@@ -1,10 +1,14 @@
 import React from 'react';
-import { RideLog, VehicleType, RideStatus } from '../types';
-import { CarIcon, ArrowUpIcon, ArrowDownIcon, EditIcon, TrashIcon } from './icons';
+import { RideLog, VehicleType, RideStatus, MessagingApp, Person, Vehicle } from '../types';
+import { CarIcon, ArrowUpIcon, ArrowDownIcon, EditIcon, TrashIcon, ShareIcon, NavigationIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
+import { generateSms, generateShareLink, generateNavigationUrl } from '../services/dispatchService';
 
 interface RideLogTableProps {
   logs: RideLog[];
+  vehicles: Vehicle[];
+  people: Person[];
+  messagingApp: MessagingApp;
   onSort: (key: 'timestamp' | 'customerName') => void;
   sortConfig: {
     key: 'timestamp' | 'customerName';
@@ -47,7 +51,7 @@ const SortableHeader: React.FC<{
 };
 
 
-export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortConfig, onToggleSmsSent, onEdit, onStatusChange, onDelete, showCompleted, onToggleShowCompleted }) => {
+export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, vehicles, people, messagingApp, onSort, sortConfig, onToggleSmsSent, onEdit, onStatusChange, onDelete, showCompleted, onToggleShowCompleted }) => {
   const { t, language } = useTranslation();
   
   const getStatusSelectClass = (status: RideStatus) => {
@@ -125,19 +129,26 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                 <SortableHeader label={t('rideLog.table.time')} sortKey="timestamp" onSort={onSort} sortConfig={sortConfig} className="pl-4 pr-3 sm:pl-0" />
                 <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('rideLog.table.driver')}</th>
                 <SortableHeader label={t('rideLog.table.customer')} sortKey="customerName" onSort={onSort} sortConfig={sortConfig} className="px-3" />
-                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('rideLog.table.phone')}</th>
                 <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('rideLog.table.route')}</th>
-                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('rideLog.table.price')}</th>
                 <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('rideLog.table.status')}</th>
                 <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('rideLog.table.sms')}</th>
+                <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('rideLog.table.dispatch')}</th>
                 <th scope="col" className="relative py-1 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-300">{t('rideLog.table.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {logs.map((log) => (
+              {logs.map((log) => {
+                const vehicle = vehicles.find(v => v.id === log.vehicleId);
+                const driver = vehicle ? people.find(p => p.id === vehicle.driverId) : null;
+                const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
+                const smsText = generateSms(log, t);
+                const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', smsText);
+                const navigationUrl = generateNavigationUrl(vehicle?.location || '', log.stops);
+                
+                return (
                 <tr key={log.id} className={`${log.status === RideStatus.Scheduled ? 'bg-sky-900/50' : ''} hover:bg-slate-700/50`}>
                   <td className="whitespace-nowrap py-2 pl-4 pr-3 text-sm text-gray-400 sm:pl-0">
-                    {new Date(log.timestamp).toLocaleString(language)}
+                    {new Date(log.timestamp).toLocaleString(language, { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 text-sm">
                     <div className="flex items-center">
@@ -152,8 +163,10 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                       </div>
                     </div>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-400">{log.customerName}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-400">{log.customerPhone}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-400">
+                    <div className="font-medium text-white">{log.customerName}</div>
+                    <div className="text-gray-400 text-xs">{log.customerPhone}</div>
+                  </td>
                   <td className="px-3 py-2 text-sm text-gray-400 max-w-xs">
                     {renderRoute(log.stops)}
                     <span className="truncate text-teal-400 text-xs"><strong>{t('rideLog.table.pickup')}:</strong> {log.pickupTime}</span>
@@ -162,9 +175,6 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                         <strong>{t('rideLog.table.note')}:</strong> {log.notes}
                       </span>
                     )}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2 text-sm font-medium text-white">
-                     {log.estimatedPrice ? `${log.estimatedPrice} Kč` : t('general.notApplicable')}
                   </td>
                    <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-400">
                      <select
@@ -189,6 +199,30 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                       aria-label={t('rideLog.table.markSmsSentFor', { customerName: log.customerName })}
                     />
                   </td>
+                  <td className="whitespace-nowrap px-3 py-2 text-sm">
+                    {log.status === RideStatus.OnTheWay && driverPhoneNumber && (
+                      <div className="flex items-center space-x-2">
+                         <a
+                            href={navigationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors hover:bg-slate-600 hover:text-white"
+                            title={t('assignment.openNavigation')}
+                          >
+                            <NavigationIcon size={18} />
+                          </a>
+                          <a
+                            href={shareLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors hover:bg-slate-600 hover:text-white"
+                            title={t('assignment.sendVia', { app: messagingApp })}
+                          >
+                            <ShareIcon size={18} />
+                          </a>
+                      </div>
+                    )}
+                  </td>
                   <td className="relative whitespace-nowrap py-2 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
                     <button
                       onClick={() => onEdit(log)}
@@ -206,7 +240,7 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, onSort, sortCo
                     </button>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>

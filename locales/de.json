@@ -24,6 +24,10 @@
       "language": "Sprache",
       "aiMode": "KI-Modus"
     },
+    "communication": {
+      "title": "Kommunikation",
+      "preferredApp": "Bevorzugte Nachrichten-App"
+    },
     "visibility": {
       "title": "Widget-Sichtbarkeit",
       "dispatch": "Dispositionsformular",
@@ -140,8 +144,10 @@
       "serviceDue": "Service in {km} km fällig.",
       "inspectionExpired": "TÜV abgelaufen!",
       "inspectionExpires": "TÜV läuft am {date} ab.",
+      "inspectionExpiresSoon": "TÜV läuft in {days} Tagen ab!",
       "vignetteExpired": "Vignette abgelaufen!",
-      "vignetteExpires": "Vignette läuft am {date} ab."
+      "vignetteExpires": "Vignette läuft am {date} ab.",
+      "vignetteExpiresSoon": "Vignette läuft in {days} Tagen ab!"
     }
   },
   "assignment": {
@@ -154,8 +160,9 @@
     "errorTitle": "Fehler bei der Fahrzeugsuche",
     "titleAI": "Fahrtzuweisungsvorschlag",
     "titleManual": "Manuelle Fahrzeugauswahl",
-    "smsSuggestion": "SMS-Vorschlag für Fahrer",
-    "sendSmsApp": "Über Standard-App senden",
+    "communication": "Fahrerkommunikation",
+    "sendVia": "Senden über {app}",
+    "openNavigation": "Navigation öffnen",
     "noDriverAssigned": "Diesem Fahrzeug ist kein Fahrer zugewiesen",
     "copyText": "Text kopieren",
     "optimizedRoute": "Optimierte Route"
@@ -170,11 +177,10 @@
       "time": "Zeit",
       "driver": "Fahrer",
       "customer": "Kunde",
-      "phone": "Telefon",
       "route": "Route",
-      "price": "Preis",
       "status": "Status",
       "sms": "SMS",
+      "dispatch": "Disposition",
       "actions": "Aktionen",
       "awaitingAssignment": "Wartet auf Zuweisung",
       "from": "Von",
@@ -281,9 +287,8 @@
     "noData": "Keine Daten für den ausgewählten Zeitraum."
   },
   "smsPreview": {
-    "title": "SMS für Fahrer bereit",
+    "title": "Nachricht für Fahrer bereit",
     "driverPhone": "Telefon des Fahrers",
-    "sendViaApp": "Über Standard-App senden",
     "noPhoneNumber": "Telefonnummer des Fahrers nicht verfügbar"
   },
   "manualAssignment": {

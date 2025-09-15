@@ -23,6 +23,12 @@ export enum PersonRole {
   Dispatcher = 'DISPATCHER',
 }
 
+export enum MessagingApp {
+  SMS = 'SMS',
+  Telegram = 'Telegram',
+  WhatsApp = 'WhatsApp',
+}
+
 export interface Person {
   id: number;
   name: string;

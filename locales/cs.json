@@ -24,6 +24,10 @@
       "language": "Jazyk",
       "aiMode": "Režim AI"
     },
+    "communication": {
+      "title": "Komunikace",
+      "preferredApp": "Preferovaná aplikace pro zprávy"
+    },
     "visibility": {
       "title": "Viditelnost widgetů",
       "dispatch": "Formulář pro zadání",
@@ -140,8 +144,10 @@
         "serviceDue": "Servis za {km} km.",
         "inspectionExpired": "STK propadlá!",
         "inspectionExpires": "STK končí {date}.",
+        "inspectionExpiresSoon": "STK končí za {days} dní!",
         "vignetteExpired": "Dálniční známka propadlá!",
-        "vignetteExpires": "Dálniční známka končí {date}."
+        "vignetteExpires": "Dálniční známka končí {date}.",
+        "vignetteExpiresSoon": "Dálniční známka končí za {days} dní!"
     }
   },
   "assignment": {
@@ -154,8 +160,9 @@
     "errorTitle": "Chyba při hledání vozidla",
     "titleAI": "Návrh přiřazení jízdy",
     "titleManual": "Manuální výběr vozidla",
-    "smsSuggestion": "Návrh SMS pro řidiče",
-    "sendSmsApp": "Odeslat přes výchozí aplikaci",
+    "communication": "Komunikace s řidičem",
+    "sendVia": "Odeslat přes {app}",
+    "openNavigation": "Otevřít navigaci",
     "noDriverAssigned": "Vozidlu není přiřazen žádný řidič",
     "copyText": "Kopírovat text",
     "optimizedRoute": "Optimalizovaná trasa"
@@ -170,11 +177,10 @@
       "time": "Čas",
       "driver": "Řidič",
       "customer": "Zákazník",
-      "phone": "Tel. číslo",
       "route": "Trasa",
-      "price": "Cena",
       "status": "Status",
       "sms": "SMS",
+      "dispatch": "Dispečink",
       "actions": "Akce",
       "awaitingAssignment": "Čeká na přiřazení",
       "from": "Z",
@@ -281,9 +287,8 @@
     "noData": "Pro vybrané období nejsou žádná data."
   },
   "smsPreview": {
-    "title": "Připravená SMS pro řidiče",
+    "title": "Zpráva pro řidiče připravena",
     "driverPhone": "Telefon řidiče",
-    "sendViaApp": "Odeslat přes výchozí aplikaci",
     "noPhoneNumber": "Telefonní číslo řidiče není k dispozici"
   },
   "manualAssignment": {

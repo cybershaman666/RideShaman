@@ -153,7 +153,7 @@ export const PhoneIcon: React.FC<IconProps> = ({ className, size = 20 }) => (
     </svg>
 );
 
-export const SendIcon: React.FC<IconProps> = ({ className, size = 24 }) => (
+export const ShareIcon: React.FC<IconProps> = ({ className, size = 24 }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <line x1="22" y1="2" x2="11" y2="13"></line>
         <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -195,5 +195,11 @@ export const TrashIcon: React.FC<IconProps> = ({ className, size = 20 }) => (
 export const WrenchIcon: React.FC<IconProps> = ({ className, size = 20 }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+    </svg>
+);
+
+export const NavigationIcon: React.FC<IconProps> = ({ className, size = 20 }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
     </svg>
 );

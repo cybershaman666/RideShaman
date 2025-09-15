@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import type { RideRequest, Vehicle, Person } from '../types';
-import { CloseIcon, ClipboardIcon, CheckCircleIcon, SendIcon } from './icons';
+import type { RideRequest, Vehicle, Person, MessagingApp } from '../types';
+import { CloseIcon, ClipboardIcon, CheckCircleIcon, ShareIcon, NavigationIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
+import { generateShareLink, generateNavigationUrl } from '../services/dispatchService';
 
 interface ManualAssignmentModalProps {
   details: {
@@ -11,11 +12,12 @@ interface ManualAssignmentModalProps {
     sms: string;
   };
   people: Person[];
+  messagingApp: MessagingApp;
   onConfirm: (durationInMinutes: number) => void;
   onClose: () => void;
 }
 
-export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ details, people, onConfirm, onClose }) => {
+export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ details, people, messagingApp, onConfirm, onClose }) => {
   const { t } = useTranslation();
   const { rideRequest, vehicle, rideDuration, sms } = details;
   const [duration, setDuration] = useState(rideDuration);
@@ -23,6 +25,8 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
   
   const driver = people.find(p => p.id === vehicle.driverId);
   const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
+  const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', sms);
+  const navigationUrl = generateNavigationUrl(vehicle.location, rideRequest.stops);
 
   useEffect(() => {
     setDuration(rideDuration);
@@ -101,22 +105,29 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
             {/* SMS Message */}
             <div className="border-t border-slate-700 pt-4">
                 {driver?.phone && <p className="mb-2"><strong className='text-gray-400'>{t('smsPreview.driverPhone')}:</strong> <a href={`tel:${driver.phone}`} className="font-mono text-teal-400 hover:underline">{driver.phone}</a></p>}
-                <h4 className="text-sm text-gray-400 font-medium mb-2">{t('assignment.smsSuggestion')}</h4>
+                <h4 className="text-sm text-gray-400 font-medium mb-2">{t('assignment.communication')}</h4>
                 <div className="relative bg-slate-900 p-4 rounded-lg border border-slate-700">
                 <p className="text-gray-200 whitespace-pre-wrap font-mono text-sm">{sms}</p>
                 <div className="absolute top-2 right-2 flex items-center space-x-2">
-                    <button
-                        onClick={() => {
-                            if (driverPhoneNumber) {
-                                window.location.href = `sms:${driverPhoneNumber}?body=${encodeURIComponent(sms)}`;
-                            }
-                        }}
-                        disabled={!driverPhoneNumber}
-                        className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors enabled:hover:bg-slate-600 enabled:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={driverPhoneNumber ? t('assignment.sendSmsApp') : t('assignment.noDriverAssigned')}
+                    <a
+                      href={navigationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors hover:bg-slate-600 hover:text-white"
+                      title={t('assignment.openNavigation')}
                     >
-                        <SendIcon className="w-5 h-5"/>
-                    </button>
+                      <NavigationIcon className="w-5 h-5"/>
+                    </a>
+                    <a
+                      href={shareLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors enabled:hover:bg-slate-600 enabled:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={driverPhoneNumber ? t('assignment.sendVia', { app: messagingApp }) : t('assignment.noDriverAssigned')}
+                      onClick={(e) => !driverPhoneNumber && e.preventDefault()}
+                    >
+                      <ShareIcon className="w-5 h-5"/>
+                    </a>
                     <button
                         type="button"
                         onClick={handleCopy}
