@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { RideRequest, Vehicle, Person } from '../types';
 import { CloseIcon, ClipboardIcon, CheckCircleIcon, SendIcon } from './icons';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface ManualAssignmentModalProps {
   details: {
@@ -15,6 +16,7 @@ interface ManualAssignmentModalProps {
 }
 
 export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ details, people, onConfirm, onClose }) => {
+  const { t } = useTranslation();
   const { rideRequest, vehicle, rideDuration, sms } = details;
   const [duration, setDuration] = useState(rideDuration);
   const [copied, setCopied] = useState(false);
@@ -41,7 +43,7 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
     if (duration > 0) {
       onConfirm(duration);
     } else {
-      alert("Zadejte prosím platnou dobu obsazení v minutách.");
+      alert(t('manualAssignment.validation.validDuration'));
     }
   };
 
@@ -55,12 +57,12 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md relative">
         <div className="flex justify-between items-center p-6 border-b border-slate-700">
           <h2 id="manual-assign-title" className="text-xl font-semibold">
-            Manuální přiřazení
+            {t('manualAssignment.title')}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
-            aria-label="Zavřít modální okno"
+            aria-label={t('general.closeModal')}
           >
             <CloseIcon />
           </button>
@@ -68,13 +70,13 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4">
             <div className='text-sm space-y-2'>
-                <p><strong className='text-gray-400'>Zákazník:</strong> {rideRequest.customerName}</p>
-                <p><strong className='text-gray-400'>Trasa:</strong> {rideRequest.pickupAddress} <span className='text-gray-400'>→</span> {rideRequest.destinationAddress}</p>
-                <p><strong className='text-gray-400'>Vozidlo:</strong> {vehicle.name} ({driver?.name || 'Nepřiřazen'})</p>
+                <p><strong className='text-gray-400'>{t('manualAssignment.customer')}:</strong> {rideRequest.customerName}</p>
+                <p><strong className='text-gray-400'>{t('manualAssignment.route')}:</strong> {rideRequest.pickupAddress} <span className='text-gray-400'>→</span> {rideRequest.destinationAddress}</p>
+                <p><strong className='text-gray-400'>{t('manualAssignment.vehicle')}:</strong> {vehicle.name} ({driver?.name || t('general.unassigned')})</p>
             </div>
             <div className='border-t border-slate-700 pt-4'>
               <label htmlFor="duration" className="block text-sm font-medium text-gray-300 mb-1">
-                Doba obsazení (v minutách)
+                {t('manualAssignment.busyDuration')}
               </label>
               <input
                 type="number"
@@ -87,14 +89,14 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
                 className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               />
                <p className="mt-2 text-xs text-gray-400">
-                Google Maps odhaduje délku této jízdy na <strong className='text-gray-200'>{rideDuration} minut</strong>. Hodnotu můžete upravit.
+                {t('manualAssignment.googleMapsEstimate', { duration: rideDuration })}
               </p>
             </div>
             
             {/* SMS Message */}
             <div className="border-t border-slate-700 pt-4">
-                {driver?.phone && <p className="mb-2"><strong className='text-gray-400'>Telefon řidiče:</strong> <a href={`tel:${driver.phone}`} className="font-mono text-teal-400 hover:underline">{driver.phone}</a></p>}
-                <h4 className="text-sm text-gray-400 font-medium mb-2">Návrh SMS pro řidiče</h4>
+                {driver?.phone && <p className="mb-2"><strong className='text-gray-400'>{t('smsPreview.driverPhone')}:</strong> <a href={`tel:${driver.phone}`} className="font-mono text-teal-400 hover:underline">{driver.phone}</a></p>}
+                <h4 className="text-sm text-gray-400 font-medium mb-2">{t('assignment.smsSuggestion')}</h4>
                 <div className="relative bg-slate-900 p-4 rounded-lg border border-slate-700">
                 <p className="text-gray-200 whitespace-pre-wrap font-mono text-sm">{sms}</p>
                 <div className="absolute top-2 right-2 flex items-center space-x-2">
@@ -106,7 +108,7 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
                         }}
                         disabled={!driverPhoneNumber}
                         className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors enabled:hover:bg-slate-600 enabled:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={driverPhoneNumber ? "Odeslat přes výchozí aplikaci (např. KDE Connect)" : "Vozidlu není přiřazen žádný řidič"}
+                        title={driverPhoneNumber ? t('assignment.sendSmsApp') : t('assignment.noDriverAssigned')}
                     >
                         <SendIcon className="w-5 h-5"/>
                     </button>
@@ -114,7 +116,7 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
                         type="button"
                         onClick={handleCopy}
                         className="p-2 rounded-md bg-slate-700 hover:bg-slate-600 text-gray-300 hover:text-white transition-colors"
-                        title="Kopírovat text"
+                        title={t('assignment.copyText')}
                     >
                         {copied ? <CheckCircleIcon className="w-5 h-5 text-green-400" /> : <ClipboardIcon className="w-5 h-5"/>}
                     </button>
@@ -129,13 +131,13 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium rounded-md bg-slate-600 text-gray-200 hover:bg-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-slate-800"
             >
-              Zrušit
+              {t('general.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-800"
             >
-              Potvrdit a přiřadit
+              {t('manualAssignment.confirmAndAssign')}
             </button>
           </div>
         </form>

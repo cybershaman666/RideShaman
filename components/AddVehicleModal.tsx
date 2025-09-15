@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Vehicle } from '../types';
 import { VehicleStatus, VehicleType } from '../types';
 import { CloseIcon } from './icons';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface AddVehicleModalProps {
   onSave: (vehicle: Omit<Vehicle, 'id' | 'freeAt' | 'driverId'>) => void;
@@ -24,6 +25,7 @@ const initialVehicleState: Omit<Vehicle, 'id' | 'freeAt' | 'driverId'> = {
 };
 
 export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClose }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState(initialVehicleState);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -39,7 +41,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
     if (formData.name.trim() && formData.location.trim() && formData.licensePlate.trim() && formData.capacity > 0) {
       onSave(formData);
     } else {
-      alert("Vyplňte prosím všechna povinná pole (Název, SPZ, Lokace, Kapacita).");
+      alert(t('vehicles.add.fillAllFields'));
     }
   };
 
@@ -53,12 +55,12 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md relative">
         <div className="flex justify-between items-center p-6 border-b border-slate-700">
           <h2 id="add-vehicle-title" className="text-xl font-semibold">
-            Přidat nové vozidlo
+            {t('vehicles.add.title')}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
-            aria-label="Zavřít modální okno"
+            aria-label={t('general.closeModal')}
           >
             <CloseIcon />
           </button>
@@ -67,7 +69,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
              <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-                Název vozidla
+                {t('vehicles.fields.name')}
               </label>
               <input
                 type="text"
@@ -76,13 +78,13 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
                 value={formData.name}
                 onChange={handleChange}
                 required
-                placeholder="např. Škoda Octavia #4"
+                placeholder={t('vehicles.add.namePlaceholder')}
                 className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               />
             </div>
             <div>
               <label htmlFor="licensePlate" className="block text-sm font-medium text-gray-300 mb-1">
-                SPZ
+                {t('vehicles.fields.licensePlate')}
               </label>
               <input
                 type="text"
@@ -91,13 +93,13 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
                 value={formData.licensePlate}
                 onChange={handleChange}
                 required
-                placeholder="např. 1AB 2345"
+                placeholder={t('vehicles.add.licensePlatePlaceholder')}
                 className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               />
             </div>
             <div>
               <label htmlFor="location" className="block text-sm font-medium text-gray-300 mb-1">
-                Lokace
+                {t('vehicles.fields.location')}
               </label>
               <input
                 type="text"
@@ -106,14 +108,14 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
                 value={formData.location}
                 onChange={handleChange}
                 required
-                placeholder="např. Náměstí, Mikulov"
+                placeholder={t('vehicles.add.locationPlaceholder')}
                 className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="type" className="block text-sm font-medium text-gray-300 mb-1">
-                  Typ
+                  {t('vehicles.fields.type')}
                 </label>
                 <select
                   id="type"
@@ -123,13 +125,13 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
                   className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 >
                   {Object.values(VehicleType).map(type => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type} value={type}>{t(`vehicleType.${type}`)}</option>
                   ))}
                 </select>
               </div>
                <div>
                 <label htmlFor="capacity" className="block text-sm font-medium text-gray-300 mb-1">
-                  Kapacita
+                  {t('vehicles.fields.capacity')}
                 </label>
                 <input
                   type="number"
@@ -144,33 +146,33 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
               </div>
             </div>
             <div className="border-t border-slate-700 pt-4 mt-4">
-              <h3 className="text-md font-semibold text-gray-200 mb-2">Servisní údaje (volitelné)</h3>
+              <h3 className="text-md font-semibold text-gray-200 mb-2">{t('vehicles.add.serviceDetailsOptional')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="mileage" className="block text-sm font-medium text-gray-300 mb-1">Stav km</label>
+                  <label htmlFor="mileage" className="block text-sm font-medium text-gray-300 mb-1">{t('vehicles.fields.mileage')}</label>
                   <input type="number" name="mileage" id="mileage" value={formData.mileage || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
                 </div>
                 <div>
-                  <label htmlFor="serviceInterval" className="block text-sm font-medium text-gray-300 mb-1">Servisní interval (km)</label>
+                  <label htmlFor="serviceInterval" className="block text-sm font-medium text-gray-300 mb-1">{t('vehicles.fields.serviceInterval')}</label>
                   <input type="number" name="serviceInterval" id="serviceInterval" value={formData.serviceInterval || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
                 </div>
                 <div className="sm:col-span-2">
-                  <label htmlFor="lastServiceMileage" className="block text-sm font-medium text-gray-300 mb-1">Poslední servis (km)</label>
+                  <label htmlFor="lastServiceMileage" className="block text-sm font-medium text-gray-300 mb-1">{t('vehicles.fields.lastServiceMileage')}</label>
                   <input type="number" name="lastServiceMileage" id="lastServiceMileage" value={formData.lastServiceMileage || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <label htmlFor="technicalInspectionExpiry" className="block text-sm font-medium text-gray-300 mb-1">Platnost STK do</label>
+                  <label htmlFor="technicalInspectionExpiry" className="block text-sm font-medium text-gray-300 mb-1">{t('vehicles.fields.inspectionExpiry')}</label>
                   <input type="date" name="technicalInspectionExpiry" id="technicalInspectionExpiry" value={formData.technicalInspectionExpiry || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
                 </div>
                 <div>
-                  <label htmlFor="vignetteExpiry" className="block text-sm font-medium text-gray-300 mb-1">Platnost dálniční známky do</label>
+                  <label htmlFor="vignetteExpiry" className="block text-sm font-medium text-gray-300 mb-1">{t('vehicles.fields.vignetteExpiry')}</label>
                   <input type="date" name="vignetteExpiry" id="vignetteExpiry" value={formData.vignetteExpiry || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
                 </div>
               </div>
               <div className="mt-4">
-                <label htmlFor="vehicleNotes" className="block text-sm font-medium text-gray-300 mb-1">Poznámky k vozidlu</label>
+                <label htmlFor="vehicleNotes" className="block text-sm font-medium text-gray-300 mb-1">{t('vehicles.fields.notes')}</label>
                 <textarea name="vehicleNotes" id="vehicleNotes" value={formData.vehicleNotes || ''} onChange={handleChange} rows={2} className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white" />
               </div>
             </div>
@@ -181,13 +183,13 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium rounded-md bg-slate-600 text-gray-200 hover:bg-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-slate-800"
             >
-              Zrušit
+              {t('general.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-800"
             >
-              Přidat vozidlo
+              {t('vehicles.add.addVehicleButton')}
             </button>
           </div>
         </form>

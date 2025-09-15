@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface BarChartData {
   label: string;
@@ -11,12 +12,13 @@ interface BarChartProps {
 }
 
 export const BarChart: React.FC<BarChartProps> = ({ data, title }) => {
+  const { t } = useTranslation();
   const maxValue = Math.max(...data.map(item => item.value), 0);
   if (data.length === 0) {
     return (
       <div className="bg-slate-700 p-4 rounded-lg">
         <h3 className="text-lg font-semibold text-gray-200 mb-4">{title}</h3>
-        <p className="text-gray-400 text-center py-8">Nejsou k dispozici žádná data.</p>
+        <p className="text-gray-400 text-center py-8">{t('analytics.noChartData')}</p>
       </div>
     );
   }

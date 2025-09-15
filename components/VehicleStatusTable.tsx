@@ -3,6 +3,7 @@ import type { Vehicle, Person } from '../types';
 import { VehicleStatus, VehicleType } from '../types';
 import { CarIcon, EditIcon, PlusIcon, WrenchIcon } from './icons';
 import { Countdown } from './Countdown';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface VehicleStatusTableProps {
   vehicles: Vehicle[];
@@ -31,6 +32,7 @@ const FilterSelect: React.FC<{
 );
 
 export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles, people, onEdit, onAddVehicleClick }) => {
+  const { t } = useTranslation();
   const [typeFilter, setTypeFilter] = useState<'all' | VehicleType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | VehicleStatus>('all');
   const [hideInactive, setHideInactive] = useState(true);
@@ -67,30 +69,30 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
   }, [vehicles, typeFilter, statusFilter, hideInactive]);
   
   const typeOptions = [
-    { value: 'all', label: 'Všechny typy' },
-    { value: VehicleType.Car, label: 'Osobák' },
-    { value: VehicleType.Van, label: 'Dodávka' },
+    { value: 'all', label: t('vehicles.filters.allTypes') },
+    { value: VehicleType.Car, label: t(`vehicleType.${VehicleType.Car}`) },
+    { value: VehicleType.Van, label: t(`vehicleType.${VehicleType.Van}`) },
   ];
 
   const statusOptions = [
-    { value: 'all', label: 'Všechny stavy' },
-    { value: VehicleStatus.Available, label: 'Volné' },
-    { value: VehicleStatus.Busy, label: 'Obsazené' },
-    { value: VehicleStatus.OutOfService, label: 'Mimo provoz' },
-    { value: VehicleStatus.NotDrivingToday, label: 'Dnes nejede' },
+    { value: 'all', label: t('vehicles.filters.allStatuses') },
+    { value: VehicleStatus.Available, label: t(`vehicleStatus.${VehicleStatus.Available}`) },
+    { value: VehicleStatus.Busy, label: t(`vehicleStatus.${VehicleStatus.Busy}`) },
+    { value: VehicleStatus.OutOfService, label: t(`vehicleStatus.${VehicleStatus.OutOfService}`) },
+    { value: VehicleStatus.NotDrivingToday, label: t(`vehicleStatus.${VehicleStatus.NotDrivingToday}`) },
   ];
 
   return (
     <div className="bg-slate-800 p-2 rounded-lg shadow-2xl flex flex-col h-full">
         <div className="flex-shrink-0 flex justify-between items-center mb-1 border-b border-slate-700 pb-1 flex-wrap gap-2">
-            <h2 className="text-md font-semibold">Status Vozidel</h2>
+            <h2 className="text-md font-semibold">{t('vehicles.title')}</h2>
             <div className="flex items-center gap-x-2 flex-wrap gap-y-2 justify-end">
                 <div className="flex items-center gap-x-2">
-                    <FilterSelect label="Filtrovat podle typu" value={typeFilter} onChange={e => setTypeFilter(e.target.value as 'all' | VehicleType)} options={typeOptions} />
-                    <FilterSelect label="Filtrovat podle statusu" value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | VehicleStatus)} options={statusOptions} />
+                    <FilterSelect label={t('vehicles.filters.filterByType')} value={typeFilter} onChange={e => setTypeFilter(e.target.value as 'all' | VehicleType)} options={typeOptions} />
+                    <FilterSelect label={t('vehicles.filters.filterByStatus')} value={statusFilter} onChange={e => setStatusFilter(e.target.value as 'all' | VehicleStatus)} options={statusOptions} />
                 </div>
                  <div className="flex items-center space-x-2 border-l border-slate-600 pl-2">
-                    <label htmlFor="hide-inactive" className="text-sm font-medium text-gray-300 cursor-pointer">Skrýt neaktivní</label>
+                    <label htmlFor="hide-inactive" className="text-sm font-medium text-gray-300 cursor-pointer">{t('vehicles.filters.hideInactive')}</label>
                     <button
                         onClick={() => setHideInactive(prev => !prev)}
                         type="button"
@@ -105,10 +107,10 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                 <button
                     onClick={onAddVehicleClick}
                     className="flex items-center space-x-2 px-3 py-1 text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-slate-800 transition-colors"
-                    aria-label="Přidat nové vozidlo"
+                    aria-label={t('vehicles.addVehicle')}
                 >
                     <PlusIcon />
-                    <span>Přidat</span>
+                    <span>{t('general.add')}</span>
                 </button>
             </div>
         </div>
@@ -116,12 +118,12 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
             <table className="min-w-full divide-y divide-slate-700">
                 <thead className="bg-slate-800 sticky top-0">
                 <tr>
-                    <th scope="col" className="py-1 pl-4 pr-3 text-left text-sm font-semibold text-gray-300 sm:pl-0">Vozidlo</th>
-                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Status</th>
-                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Lokace</th>
-                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">Upozornění</th>
+                    <th scope="col" className="py-1 pl-4 pr-3 text-left text-sm font-semibold text-gray-300 sm:pl-0">{t('vehicles.table.vehicle')}</th>
+                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('vehicles.table.status')}</th>
+                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('vehicles.table.location')}</th>
+                    <th scope="col" className="px-3 py-1 text-left text-sm font-semibold text-gray-300">{t('vehicles.table.warnings')}</th>
                     <th scope="col" className="relative py-1 pl-3 pr-4 sm:pr-0 text-right text-sm font-semibold text-gray-300">
-                        Akce
+                        {t('vehicles.table.actions')}
                     </th>
                 </tr>
                 </thead>
@@ -134,10 +136,10 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                     if (vehicle.mileage && vehicle.lastServiceMileage && vehicle.serviceInterval && vehicle.mileage >= vehicle.lastServiceMileage + vehicle.serviceInterval - 1000) {
                         const kmOver = vehicle.mileage - (vehicle.lastServiceMileage + vehicle.serviceInterval);
                         if (kmOver > 0) {
-                            warnings.push(`Servis po termínu o ${kmOver} km.`);
+                            warnings.push(t('vehicles.warnings.serviceOverdue', { km: kmOver }));
                         } else {
                             const kmToService = (vehicle.lastServiceMileage + vehicle.serviceInterval) - vehicle.mileage;
-                            warnings.push(`Servis za ${kmToService} km.`);
+                            warnings.push(t('vehicles.warnings.serviceDue', { km: kmToService }));
                         }
                     }
 
@@ -146,9 +148,9 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                         const expiryDate = new Date(vehicle.technicalInspectionExpiry);
                         const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
                         if (expiryDate < new Date()) {
-                            warnings.push('STK propadlá!');
+                            warnings.push(t('vehicles.warnings.inspectionExpired'));
                         } else if (expiryDate < thirtyDaysFromNow) {
-                            warnings.push(`STK končí ${expiryDate.toLocaleDateString('cs-CZ')}.`);
+                            warnings.push(t('vehicles.warnings.inspectionExpires', { date: expiryDate.toLocaleDateString() }));
                         }
                     }
                     
@@ -157,9 +159,9 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                         const expiryDate = new Date(vehicle.vignetteExpiry);
                         const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
                         if (expiryDate < new Date()) {
-                            warnings.push('Dálniční známka propadlá!');
+                            warnings.push(t('vehicles.warnings.vignetteExpired'));
                         } else if (expiryDate < thirtyDaysFromNow) {
-                            warnings.push(`Dálniční známka končí ${expiryDate.toLocaleDateString('cs-CZ')}.`);
+                            warnings.push(t('vehicles.warnings.vignetteExpires', { date: expiryDate.toLocaleDateString() }));
                         }
                     }
 
@@ -173,7 +175,7 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                         </div>
                         <div className="ml-2">
                             <div className="font-medium text-white text-sm">{vehicle.name}</div>
-                            <div className="text-gray-400 text-xs">{driver?.name || <span className="italic text-gray-500">Nepřiřazen</span>}</div>
+                            <div className="text-gray-400 text-xs">{driver?.name || <span className="italic text-gray-500">{t('general.unassigned')}</span>}</div>
                             {driver?.phone && <a href={`tel:${driver.phone}`} className="text-teal-400 text-xs font-mono hover:underline">{driver.phone}</a>}
                             <div className="mt-0.5 font-mono text-xs text-gray-500 bg-slate-700 px-1.5 py-0.5 rounded w-fit">{vehicle.licensePlate}</div>
                         </div>
@@ -183,7 +185,7 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                         <div className="flex items-center">
                         <div className={`h-2.5 w-2.5 rounded-full mr-2 ${getStatusDotClass(vehicle.status)}`}></div>
                         <span className={`${getStatusClass(vehicle.status)} capitalize text-xs`}>
-                            {vehicle.status}
+                            {t(`vehicleStatus.${vehicle.status}`)}
                             {(vehicle.status === VehicleStatus.Busy || vehicle.status === VehicleStatus.OutOfService) && vehicle.freeAt && <Countdown freeAt={vehicle.freeAt} />}
                         </span>
                         </div>
@@ -201,7 +203,7 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                         <button
                         onClick={() => onEdit(vehicle)}
                         className="text-amber-400 hover:text-amber-300 transition-colors p-2 -m-2 rounded-full"
-                        aria-label={`Upravit vozidlo ${vehicle.name}`}
+                        aria-label={t('vehicles.editVehicle', { name: vehicle.name })}
                         >
                         <EditIcon size={18} />
                         </button>

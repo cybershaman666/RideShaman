@@ -1,26 +1,26 @@
 export enum VehicleType {
-  Car = 'osobák',
-  Van = 'dodávka',
+  Car = 'CAR',
+  Van = 'VAN',
 }
 
 export enum VehicleStatus {
-  Available = 'volné',
-  Busy = 'obsazené',
-  OutOfService = 'mimo provoz',
-  NotDrivingToday = 'dnes nejede',
+  Available = 'AVAILABLE',
+  Busy = 'BUSY',
+  OutOfService = 'OUT_OF_SERVICE',
+  NotDrivingToday = 'NOT_DRIVING_TODAY',
 }
 
 export enum RideStatus {
-  Scheduled = 'naplánováno',
-  OnTheWay = 'na cestě',
-  Completed = 'dokončeno',
-  Cancelled = 'zrušeno',
+  Scheduled = 'SCHEDULED',
+  OnTheWay = 'ON_THE_WAY',
+  Completed = 'COMPLETED',
+  Cancelled = 'CANCELLED',
 }
 
 export enum PersonRole {
-  Driver = 'řidič',
-  Management = 'vedení',
-  Dispatcher = 'dispečer',
+  Driver = 'DRIVER',
+  Management = 'MANAGEMENT',
+  Dispatcher = 'DISPATCHER',
 }
 
 export interface Person {
@@ -80,7 +80,8 @@ export interface AssignmentResultData {
 }
 
 export interface ErrorResult {
-  message: string;
+  messageKey: string;
+  message?: string;
 }
 
 export interface RideLog {
@@ -123,8 +124,9 @@ export type LayoutConfig = LayoutItem[];
 export interface Notification {
   id: string;
   type: 'delay' | 'reminder';
-  title: string;
-  message: string;
+  titleKey: string;
+  messageKey: string;
+  messageParams?: Record<string, string | number>;
   timestamp: number;
   rideLogId: string;
 }

@@ -9,13 +9,13 @@ if (!GEMINI_API_KEY) {
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY! });
 
 /**
- * Generates an SMS message for the driver.
+ * Generates an SMS message for the driver in the selected language.
  */
-export function generateSms(ride: RideRequest | RideLog): string {
+export function generateSms(ride: RideRequest | RideLog, t: (key: string, params?: any) => string): string {
   let formattedPickupTime = ride.pickupTime;
   
   if (ride.pickupTime === 'ihned') {
-    formattedPickupTime = 'co nejdříve';
+    formattedPickupTime = t('sms.pickupASAP');
   } else if (ride.pickupTime && !isNaN(new Date(ride.pickupTime).getTime())) {
     const date = new Date(ride.pickupTime);
     const hours = date.getHours().toString().padStart(2, '0');
@@ -23,9 +23,9 @@ export function generateSms(ride: RideRequest | RideLog): string {
     formattedPickupTime = `${hours}:${minutes}`;
   }
 
-  const baseSms = `Odkud: ${ride.pickupAddress}, Kam: ${ride.destinationAddress}, Jméno: ${ride.customerName}, Telefon: ${ride.customerPhone}, Počet osob: ${ride.passengers}, Vyzvednout: ${formattedPickupTime}`;
+  const baseSms = `${t('sms.from')}: ${ride.pickupAddress}, ${t('sms.to')}: ${ride.destinationAddress}, ${t('sms.name')}: ${ride.customerName}, ${t('sms.phone')}: ${ride.customerPhone}, ${t('sms.passengers')}: ${ride.passengers}, ${t('sms.pickupTime')}: ${formattedPickupTime}`;
   
-  return ride.notes ? `${baseSms}, Poznámka: ${ride.notes}` : baseSms;
+  return ride.notes ? `${baseSms}, ${t('sms.note')}: ${ride.notes}` : baseSms;
 }
 
 // Simple in-memory cache for geocoding results
@@ -44,8 +44,8 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
         return cached;
     }
 
-    const fetchCoords = async (addrToTry: string) => {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}`;
+    const fetchCoords = async (addrToTry: string, lang: string) => {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}&accept-language=${lang}`;
         const response = await fetch(url, {
             headers: { 'User-Agent': 'RapidDispatchAI/1.0 (https://example.com)' }
         });
@@ -59,7 +59,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
 
     try {
         // Attempt 1: Full address
-        let result = await fetchCoords(address);
+        let result = await fetchCoords(address, 'cs'); // Prioritize Czech for local addresses
 
         // Attempt 2: Fallback to just the city/town if full address fails
         if (!result) {
@@ -67,7 +67,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
             const city = parts[parts.length - 1];
             if (city && city.toLowerCase() !== address.toLowerCase()) {
                 console.log(`Geocoding for "${address}" failed. Falling back to "${city}".`);
-                result = await fetchCoords(city);
+                result = await fetchCoords(city, 'cs');
             }
         }
         
@@ -79,7 +79,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
         throw new Error(`Address not found: ${address}`);
     } catch (error) {
         console.error("Geocoding error:", error);
-        throw new Error(`Nepodařilo se najít souřadnice pro adresu: ${address}. Zkuste ji upřesnit.`);
+        throw new Error(`Could not find coordinates for address: ${address}. Please try to be more specific.`);
     }
 }
 
@@ -127,15 +127,15 @@ function calculatePrice(
         const rateNameLower = rate.name.toLowerCase();
 
         // Heuristic for "V rámci [City]"
-        if (rateNameLower.includes("v rámci mikulova")) {
+        if (rateNameLower.includes("v rámci mikulova") || rateNameLower.includes("within mikulov")) {
             if (pickupLower.includes("mikulov") && destLower.includes("mikulov")) return rate.price;
-        } else if (rateNameLower.includes("v rámci hustopečí")) {
+        } else if (rateNameLower.includes("v rámci hustopečí") || rateNameLower.includes("within hustopeče")) {
             if (pickupLower.includes("hustopeče") && destLower.includes("hustopeče")) return rate.price;
         } 
         // Heuristic for "Location A - Location B"
-        else if (rateNameLower.includes("zaječí") && rateNameLower.includes("diskotéka")) {
-            if ((pickupLower.includes("zaječí") && destLower.includes("diskotéka")) ||
-                (pickupLower.includes("diskotéka") && destLower.includes("zaječí"))) {
+        else if (rateNameLower.includes("zaječí") && (rateNameLower.includes("diskotéka") || rateNameLower.includes("disco"))) {
+            if ((pickupLower.includes("zaječí") && (destLower.includes("diskotéka") || destLower.includes("retro"))) ||
+                ((pickupLower.includes("diskotéka") || pickupLower.includes("retro")) && destLower.includes("zaječí"))) {
                 return rate.price;
             }
         }
@@ -159,19 +159,21 @@ export async function findBestVehicle(
   vehicles: Vehicle[],
   isAiEnabled: boolean,
   tariff: Tariff,
+  language: string,
 ): Promise<AssignmentResultData | ErrorResult> {
 
     if (isAiEnabled && !GEMINI_API_KEY) {
-        return { message: "Chybí konfigurační klíč pro AI služby." };
+        return { messageKey: "error.missingApiKey" };
     }
     
     const vehiclesInService = vehicles.filter(v => v.status !== VehicleStatus.OutOfService && v.status !== VehicleStatus.NotDrivingToday);
     
     if (vehiclesInService.length === 0) {
-        return { message: "Všechna vozidla jsou momentálně mimo provoz." };
+        return { messageKey: "error.noVehiclesInService" };
     }
 
-    const sms = generateSms(rideRequest);
+    const t = (key: string, params?: any) => key; // Dummy t function for SMS generation
+    const sms = generateSms(rideRequest, t); // This SMS is a template, real one is generated in UI
     
     // --- Step 1: Geocode all necessary locations ---
     let pickupCoords: { lat: number, lon: number };
@@ -189,7 +191,7 @@ export async function findBestVehicle(
         vehicleCoords = await Promise.all(vehicleCoordsPromises);
 
     } catch (e: any) {
-        return { message: e.message || "Chyba při zjišťování polohy z adres." };
+        return { messageKey: "error.geocodingFailed", message: e.message };
     }
 
     // --- Step 2: Get all ETAs from vehicles to pickup location from OSRM ---
@@ -220,7 +222,7 @@ export async function findBestVehicle(
     const mainRideRoute = await getOsrmRoute(`${pickupCoords.lon},${pickupCoords.lat};${destinationCoords.lon},${destinationCoords.lat}`);
 
     if (!mainRideRoute) {
-        return { message: "Nepodařilo se vypočítat vzdálenost hlavní trasy." };
+        return { messageKey: "error.mainRouteCalculationFailed" };
     }
     const rideDistanceKm = mainRideRoute.distance / 1000;
     const rideDurationMinutes = Math.round(mainRideRoute.duration / 60);
@@ -252,7 +254,7 @@ export async function findBestVehicle(
     );
 
     if (suitableVehicles.length === 0) {
-        return { message: `Žádné vozidlo nemá dostatečnou kapacitu pro ${rideRequest.passengers} cestujících.` };
+        return { messageKey: "error.insufficientCapacity", message: `${rideRequest.passengers}` };
     }
     
     suitableVehicles.sort((a, b) => a.eta - b.eta); // Pre-sort for the AI

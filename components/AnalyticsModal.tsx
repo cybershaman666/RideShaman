@@ -5,6 +5,7 @@ import { CloseIcon, PdfIcon } from './icons';
 import { BarChart } from './BarChart';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface AnalyticsModalProps {
   rideLog: RideLog[];
@@ -23,6 +24,7 @@ const StatCard: React.FC<{ title: string; value: string | number; description?: 
 );
 
 export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ rideLog, vehicles, onClose }) => {
+    const { t, language } = useTranslation();
     const [dateRange, setDateRange] = useState<DateRange>('7d');
     const [isExporting, setIsExporting] = useState(false);
     const exportRef = useRef<HTMLElement>(null);
@@ -149,7 +151,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ rideLog, vehicle
     
         } catch (error) {
             console.error("Error exporting to PDF:", error);
-            alert("Při exportu do PDF došlo k chybě.");
+            alert(t('analytics.exportError'));
         } finally {
             setIsExporting(false);
         }
@@ -159,52 +161,52 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ rideLog, vehicle
         <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-center p-4 animate-fade-in" role="dialog" aria-modal="true">
             <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
                 <header className="flex justify-between items-center p-6 border-b border-slate-700 flex-shrink-0">
-                    <h2 className="text-xl font-semibold">Reporty a Analytika</h2>
+                    <h2 className="text-xl font-semibold">{t('analytics.title')}</h2>
                     <div className="flex items-center space-x-4">
                         <button 
                             onClick={handleExportPdf} 
                             disabled={isExporting}
                             className="flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors disabled:bg-slate-500 disabled:cursor-wait"
-                            aria-label="Exportovat do PDF"
+                            aria-label={t('analytics.exportPdf')}
                         >
                             <PdfIcon />
-                            <span>{isExporting ? 'Exportuji...' : 'Export PDF'}</span>
+                            <span>{isExporting ? t('analytics.exporting') : t('analytics.exportPdf')}</span>
                         </button>
-                        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label="Zavřít"><CloseIcon /></button>
+                        <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label={t('general.close')}><CloseIcon /></button>
                     </div>
                 </header>
                 <main ref={exportRef} className="p-6 flex-grow overflow-y-auto space-y-6">
                     <div className="flex items-center space-x-2">
-                        <DateRangeButton range="today" label="Dnes" />
-                        <DateRangeButton range="7d" label="Posledních 7 dní" />
-                        <DateRangeButton range="30d" label="Posledních 30 dní" />
-                        <DateRangeButton range="all" label="Celkově" />
+                        <DateRangeButton range="today" label={t('analytics.ranges.today')} />
+                        <DateRangeButton range="7d" label={t('analytics.ranges.last7d')} />
+                        <DateRangeButton range="30d" label={t('analytics.ranges.last30d')} />
+                        <DateRangeButton range="all" label={t('analytics.ranges.allTime')} />
                     </div>
                     
                     {/* Stat cards */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <StatCard title="Dokončené jízdy" value={analyticsData.completedRides} />
-                        <StatCard title="Celkové tržby" value={`${analyticsData.totalRevenue.toLocaleString('cs-CZ')} Kč`} />
-                        <StatCard title="Průměrná cena jízdy" value={`${analyticsData.avgPricePerRide.toFixed(0)} Kč`} />
-                        <StatCard title="Zrušené jízdy" value={analyticsData.ridesCancelled} />
+                        <StatCard title={t('analytics.cards.completedRides')} value={analyticsData.completedRides} />
+                        <StatCard title={t('analytics.cards.totalRevenue')} value={`${analyticsData.totalRevenue.toLocaleString(language)} Kč`} />
+                        <StatCard title={t('analytics.cards.avgPrice')} value={`${analyticsData.avgPricePerRide.toFixed(0)} Kč`} />
+                        <StatCard title={t('analytics.cards.cancelledRides')} value={analyticsData.ridesCancelled} />
                     </div>
 
                     {/* Chart */}
                     <div className="pt-4">
-                        <BarChart data={analyticsData.chartData} title="Počet jízd na vozidlo" />
+                        <BarChart data={analyticsData.chartData} title={t('analytics.chartTitle')} />
                     </div>
                     
                     {/* Vehicle Table */}
                     <div className="pt-4">
-                        <h3 className="text-lg font-semibold text-gray-200 mb-4">Statistiky vozidel</h3>
+                        <h3 className="text-lg font-semibold text-gray-200 mb-4">{t('analytics.tableTitle')}</h3>
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-slate-700">
                                 <thead className="bg-slate-700/50">
                                     <tr>
-                                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-300 sm:pl-6">Vozidlo</th>
-                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">SPZ</th>
-                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Dokončené jízdy</th>
-                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">Tržby</th>
+                                        <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-300 sm:pl-6">{t('analytics.table.vehicle')}</th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">{t('analytics.table.licensePlate')}</th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">{t('analytics.table.completedRides')}</th>
+                                        <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-300">{t('analytics.table.revenue')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-800 bg-slate-800">
@@ -213,12 +215,12 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ rideLog, vehicle
                                             <td className="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-white sm:pl-6">{stat.vehicleName}</td>
                                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-400 font-mono">{stat.vehicleLicensePlate}</td>
                                             <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">{stat.rideCount}</td>
-                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">{stat.revenue.toLocaleString('cs-CZ')} Kč</td>
+                                            <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-300">{stat.revenue.toLocaleString(language)} Kč</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
-                            {analyticsData.vehicleStats.length === 0 && <p className="text-center py-4 text-gray-500">Pro vybrané období nejsou žádná data.</p>}
+                            {analyticsData.vehicleStats.length === 0 && <p className="text-center py-4 text-gray-500">{t('analytics.noData')}</p>}
                         </div>
                     </div>
                 </main>

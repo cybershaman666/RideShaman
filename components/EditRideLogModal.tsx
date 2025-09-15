@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { RideLog, Vehicle, Person } from '../types';
 import { RideStatus, VehicleStatus, PersonRole } from '../types';
 import { CloseIcon } from './icons';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface EditRideLogModalProps {
   log: RideLog;
@@ -12,6 +13,7 @@ interface EditRideLogModalProps {
 }
 
 export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicles, people, onSave, onClose }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<RideLog>(log);
 
   const availableVehicles = vehicles.filter(v => v.status === VehicleStatus.Available);
@@ -93,12 +95,12 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-lg relative">
         <div className="flex justify-between items-center p-6 border-b border-slate-700">
           <h2 id="edit-log-title" className="text-xl font-semibold">
-            Upravit záznam jízdy
+            {t('rideLog.edit.title')}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
-            aria-label="Zavřít modální okno"
+            aria-label={t('general.closeModal')}
           >
             <CloseIcon />
           </button>
@@ -107,43 +109,43 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="customerName" className="block text-sm font-medium text-gray-300 mb-1">Jméno zákazníka</label>
+                <label htmlFor="customerName" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.customerName')}</label>
                 <input type="text" id="customerName" name="customerName" value={formData.customerName} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
               </div>
               <div>
-                <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-300 mb-1">Telefonní číslo</label>
+                <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.customerPhone')}</label>
                 <input type="tel" id="customerPhone" name="customerPhone" value={formData.customerPhone} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
               </div>
             </div>
             <div>
-              <label htmlFor="pickupAddress" className="block text-sm font-medium text-gray-300 mb-1">Adresa nástupu</label>
+              <label htmlFor="pickupAddress" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.pickupAddress')}</label>
               <input type="text" id="pickupAddress" name="pickupAddress" value={formData.pickupAddress} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
             </div>
             <div>
-              <label htmlFor="destinationAddress" className="block text-sm font-medium text-gray-300 mb-1">Adresa cíle</label>
+              <label htmlFor="destinationAddress" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.destinationAddress')}</label>
               <input type="text" id="destinationAddress" name="destinationAddress" value={formData.destinationAddress} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="pickupTime" className="block text-sm font-medium text-gray-300 mb-1">Čas vyzvednutí</label>
+                <label htmlFor="pickupTime" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.pickupTime')}</label>
                 <input type="text" id="pickupTime" name="pickupTime" value={formData.pickupTime} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
               </div>
               <div>
-                <label htmlFor="status" className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-300 mb-1">{t('rideLog.table.status')}</label>
                 <select id="status" name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                   {Object.values(RideStatus).map(status => (
-                    <option key={status} value={status}>{status}</option>
+                    <option key={status} value={status}>{t(`rideStatus.${status}`)}</option>
                   ))}
                 </select>
               </div>
             </div>
             
             <div className="border-t border-slate-700 pt-4">
-                <h3 className="text-md font-semibold text-gray-200 mb-2">Přiřazení</h3>
-                <p className="text-xs text-gray-400 mb-3">Vyberte vozidlo pro přiřazení. Řidič se vyplní automaticky, ale můžete ho změnit.</p>
+                <h3 className="text-md font-semibold text-gray-200 mb-2">{t('rideLog.edit.assignmentTitle')}</h3>
+                <p className="text-xs text-gray-400 mb-3">{t('rideLog.edit.assignmentHelp')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-300 mb-1">Dostupná vozidla</label>
+                        <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-300 mb-1">{t('rideLog.edit.availableVehicles')}</label>
                         <select
                             id="vehicleId"
                             name="vehicleId"
@@ -151,14 +153,14 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
                             onChange={handleVehicleSelect}
                             className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         >
-                            <option value="">-- Nepřiřazeno --</option>
+                            <option value="">-- {t('general.unassigned')} --</option>
                             {availableVehicles.map(v => (
                                 <option key={v.id} value={v.id}>{v.name} ({v.licensePlate})</option>
                             ))}
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="driverName" className="block text-sm font-medium text-gray-300 mb-1">Řidič</label>
+                        <label htmlFor="driverName" className="block text-sm font-medium text-gray-300 mb-1">{t('rideLog.table.driver')}</label>
                         <select
                             id="driverName"
                             name="driverName"
@@ -166,30 +168,30 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
                             onChange={handleChange}
                             className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                         >
-                            <option value="">-- Vyberte řidiče --</option>
+                            <option value="">-- {t('rideLog.edit.selectDriver')} --</option>
                             {drivers.map(d => (
                                 <option key={d.id} value={d.name}>{d.name}</option>
                             ))}
                         </select>
                     </div>
                     <div className="sm:col-span-2">
-                        <label htmlFor="estimatedPrice" className="block text-sm font-medium text-gray-300 mb-1">Odhadovaná cena (Kč)</label>
+                        <label htmlFor="estimatedPrice" className="block text-sm font-medium text-gray-300 mb-1">{t('rideLog.table.price')} (Kč)</label>
                         <input type="number" id="estimatedPrice" name="estimatedPrice" value={formData.estimatedPrice || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
                     </div>
                 </div>
             </div>
 
             <div>
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-300 mb-1">Poznámka</label>
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.notes')}</label>
               <textarea id="notes" name="notes" value={formData.notes || ''} onChange={handleChange} rows={3} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
             </div>
           </div>
           <div className="flex justify-end items-center p-6 bg-slate-900/50 border-t border-slate-700 rounded-b-lg space-x-3">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-md bg-slate-600 text-gray-200 hover:bg-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-slate-800">
-              Zrušit
+              {t('general.cancel')}
             </button>
             <button type="submit" className="px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-800">
-              Uložit změny
+              {t('general.saveChanges')}
             </button>
           </div>
         </form>

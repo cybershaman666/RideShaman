@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { RideRequest, RideLog } from '../types';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface DispatchFormProps {
   onSubmit: (rideRequest: RideRequest) => void;
@@ -117,6 +118,7 @@ const AutocompleteInputField: React.FC<{
 
 
 export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, onSchedule, isLoading, rideHistory, cooldownTime, onRoutePreview }) => {
+  const { t } = useTranslation();
   const [pickupAddress, setPickupAddress] = useState('Náměstí, Mikulov');
   const [destinationAddress, setDestinationAddress] = useState('Dukelské náměstí, Hustopeče');
   const [customerName, setCustomerName] = useState('Jan Novák');
@@ -190,13 +192,13 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
 
   const validateForm = (): boolean => {
       const newErrors: Partial<Record<keyof RideRequest, string>> = {};
-      if (!pickupAddress.trim()) newErrors.pickupAddress = "Adresa nástupu je povinná.";
-      if (!destinationAddress.trim()) newErrors.destinationAddress = "Cílová adresa je povinná.";
-      if (!customerName.trim()) newErrors.customerName = "Jméno zákazníka je povinné.";
-      if (!customerPhone.trim()) newErrors.customerPhone = "Telefonní číslo je povinné.";
-      if (!pickupTime.trim()) newErrors.pickupTime = "Čas vyzvednutí je povinný.";
-      if (isScheduled && new Date(pickupTime).getTime() <= Date.now()) newErrors.pickupTime = "Plánovaný čas musí být v budoucnosti.";
-      if (passengers <= 0) newErrors.passengers = "Počet cestujících musí být kladné číslo.";
+      if (!pickupAddress.trim()) newErrors.pickupAddress = t('dispatch.validation.pickupRequired');
+      if (!destinationAddress.trim()) newErrors.destinationAddress = t('dispatch.validation.destinationRequired');
+      if (!customerName.trim()) newErrors.customerName = t('dispatch.validation.nameRequired');
+      if (!customerPhone.trim()) newErrors.customerPhone = t('dispatch.validation.phoneRequired');
+      if (!pickupTime.trim()) newErrors.pickupTime = t('dispatch.validation.pickupTimeRequired');
+      if (isScheduled && new Date(pickupTime).getTime() <= Date.now()) newErrors.pickupTime = t('dispatch.validation.futureTimeRequired');
+      if (passengers <= 0) newErrors.passengers = t('dispatch.validation.positivePassengers');
 
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
@@ -226,36 +228,36 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
 
   return (
     <div className="bg-slate-800 p-2 rounded-lg shadow-2xl flex flex-col h-full">
-        <h2 className="text-md font-semibold mb-1 border-b border-slate-700 pb-1">Nová Jízda</h2>
+        <h2 className="text-md font-semibold mb-1 border-b border-slate-700 pb-1">{t('dispatch.newRide')}</h2>
         <form onSubmit={handleSubmit} className="space-y-1 flex-grow flex flex-col">
         <div className="flex-grow space-y-1 overflow-y-auto pr-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <AutocompleteInputField 
-                    label="Adresa nástupu" 
+                    label={t('dispatch.pickupAddress')} 
                     id="pickupAddress" 
                     value={pickupAddress} 
                     onChange={setPickupAddress} 
                     suggestions={uniqueAddresses} 
                     error={errors.pickupAddress} 
-                    hint="Hledání upřednostněno pro Jižní Moravu."
+                    hint={t('dispatch.addressHint')}
                 />
                 <AutocompleteInputField 
-                    label="Adresa cíle" 
+                    label={t('dispatch.destinationAddress')} 
                     id="destinationAddress" 
                     value={destinationAddress} 
                     onChange={setDestinationAddress} 
                     suggestions={uniqueAddresses} 
                     error={errors.destinationAddress}
-                    hint="Hledání upřednostněno pro Jižní Moravu."
+                    hint={t('dispatch.addressHint')}
                 />
             </div>
-            <AutocompleteInputField label="Jméno zákazníka" id="customerName" value={customerName} onChange={setCustomerName} suggestions={uniqueCustomerNames} error={errors.customerName} />
-            <InputField label="Telefonní číslo" id="customerPhone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} type="tel" error={errors.customerPhone} />
+            <AutocompleteInputField label={t('dispatch.customerName')} id="customerName" value={customerName} onChange={setCustomerName} suggestions={uniqueCustomerNames} error={errors.customerName} />
+            <InputField label={t('dispatch.customerPhone')} id="customerPhone" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} type="tel" error={errors.customerPhone} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <InputField label="Počet cestujících" id="passengers" value={passengers} onChange={e => setPassengers(Math.max(1, parseInt(e.target.value, 10) || 1))} type="number" error={errors.passengers} />
+                <InputField label={t('dispatch.passengers')} id="passengers" value={passengers} onChange={e => setPassengers(Math.max(1, parseInt(e.target.value, 10) || 1))} type="number" error={errors.passengers} />
                 <div>
                     <div className="flex justify-between items-center mb-1">
-                        <label className="block text-xs font-medium text-gray-300">Čas vyzvednutí</label>
+                        <label className="block text-xs font-medium text-gray-300">{t('dispatch.pickupTime')}</label>
                         <div className="flex items-center">
                             <input
                                 type="checkbox"
@@ -264,7 +266,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
                                 onChange={(e) => handleScheduleToggle(e.target.checked)}
                                 className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-amber-500 focus:ring-amber-600 focus:ring-offset-slate-800 cursor-pointer"
                             />
-                            <label htmlFor="isScheduled" className="ml-2 text-sm text-gray-300 cursor-pointer">Naplánovat</label>
+                            <label htmlFor="isScheduled" className="ml-2 text-sm text-gray-300 cursor-pointer">{t('dispatch.schedule')}</label>
                         </div>
                     </div>
 
@@ -281,7 +283,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
                     ) : (
                         <input
                             type="text"
-                            value="Ihned"
+                            value={t('dispatch.asap')}
                             readOnly
                             className="w-full bg-slate-600 border border-slate-500 rounded-md shadow-sm py-1 px-3 text-gray-300 cursor-default"
                         />
@@ -290,7 +292,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
                     {errors.pickupTime && <p className="mt-1 text-xs text-red-400">{errors.pickupTime}</p>}
                     
                     <div className="flex items-center space-x-1 mt-1">
-                        <button type="button" onClick={() => handleQuickTimeSelect()} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">ihned</button>
+                        <button type="button" onClick={() => handleQuickTimeSelect()} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">{t('dispatch.asap')}</button>
                         <button type="button" onClick={() => handleQuickTimeSelect(10)} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+10 min</button>
                         <button type="button" onClick={() => handleQuickTimeSelect(20)} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+20 min</button>
                         <button type="button" onClick={() => handleQuickTimeSelect(30)} className="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-600 hover:bg-slate-500 transition-colors">+30 min</button>
@@ -299,7 +301,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
             </div>
             
             <div>
-                <label htmlFor="notes" className="block text-xs font-medium text-gray-300 mb-1">Poznámka (volitelné)</label>
+                <label htmlFor="notes" className="block text-xs font-medium text-gray-300 mb-1">{t('dispatch.notesOptional')}</label>
                 <textarea
                 id="notes"
                 name="notes"
@@ -307,7 +309,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
                 onChange={(e) => setNotes(e.target.value)}
                 rows={1}
                 className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-1 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                placeholder="např. 5. patro, u zadního vchodu..."
+                placeholder={t('dispatch.notesPlaceholder')}
                 ></textarea>
             </div>
         </div>
@@ -319,12 +321,12 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
             className="w-full flex justify-center py-1 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 focus:ring-offset-slate-800 disabled:bg-amber-800 disabled:cursor-not-allowed transition-colors mt-auto"
         >
             {isScheduled 
-                ? 'Naplánovat jízdu' 
+                ? t('dispatch.scheduleRide') 
                 : isLoading
-                ? 'Hledám vozidlo...'
+                ? t('dispatch.findingVehicle')
                 : isOnCooldown 
-                ? `Zkuste to znovu za ${cooldownTime}s`
-                : 'Najít vozidlo'}
+                ? t('dispatch.cooldown', { cooldownTime })
+                : t('dispatch.findVehicle')}
         </button>
         </form>
     </div>

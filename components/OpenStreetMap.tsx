@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap, Popup } from 'react-
 import L from 'leaflet';
 import type { Vehicle, AssignmentResultData, Person } from '../types';
 import { VehicleType } from '../types';
+import { useTranslation } from '../contexts/LanguageContext';
 
 // Fix for default icon path issue with bundlers
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -30,13 +31,14 @@ type RouteSummary = { distance: string; duration: string };
 const geocodeCache = new Map<string, Coords>();
 const SOUTH_MORAVIA_VIEWBOX = '16.3,48.7,17.2,49.3'; // lon_min,lat_min,lon_max,lat_max
 
-async function geocodeAddress(address: string): Promise<Coords> {
-    if (geocodeCache.has(address)) {
-        return geocodeCache.get(address)!;
+async function geocodeAddress(address: string, lang: string): Promise<Coords> {
+    const cacheKey = `${address}_${lang}`;
+    if (geocodeCache.has(cacheKey)) {
+        return geocodeCache.get(cacheKey)!;
     }
 
     const fetchCoords = async (addrToTry: string): Promise<Coords | null> => {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}`;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}&accept-language=${lang},en;q=0.5`;
         const response = await fetch(url, {
             headers: { 'User-Agent': 'RapidDispatchAI/1.0 (https://example.com)' }
         });
@@ -63,7 +65,7 @@ async function geocodeAddress(address: string): Promise<Coords> {
         }
         
         if (result) {
-            geocodeCache.set(address, result); // Cache under the original full address
+            geocodeCache.set(cacheKey, result);
             return result;
         }
 
@@ -107,14 +109,15 @@ const MapResizeController: React.FC = () => {
 
 
 const VehicleMarker: React.FC<{ vehicle: Vehicle, people: Person[] }> = ({ vehicle, people }) => {
+    const { t, language } = useTranslation();
     const [position, setPosition] = useState<Coords | null>(null);
     const driver = people.find(p => p.id === vehicle.driverId);
 
     useEffect(() => {
-        geocodeAddress(vehicle.location)
+        geocodeAddress(vehicle.location, language)
             .then(setPosition)
             .catch(err => console.error(err));
-    }, [vehicle.location]);
+    }, [vehicle.location, language]);
 
     const iconHtml = `
       <div class="p-1 bg-slate-900/80 rounded-full backdrop-blur-sm">
@@ -138,7 +141,7 @@ const VehicleMarker: React.FC<{ vehicle: Vehicle, people: Person[] }> = ({ vehic
             <Popup>
                 <div className="text-sm">
                     <p className="font-bold text-base">{vehicle.name}</p>
-                    <p>{driver?.name || 'Nepřiřazen'}</p>
+                    <p>{driver?.name || t('general.unassigned')}</p>
                     <p className="font-mono text-xs">{vehicle.licensePlate}</p>
                 </div>
             </Popup>
@@ -151,6 +154,7 @@ const RouteDrawer: React.FC<{
     confirmedAssignment: OpenStreetMapProps['confirmedAssignment'];
     onRouteCalculated: (summary: RouteSummary | null) => void;
 }> = ({ routeToPreview, confirmedAssignment, onRouteCalculated }) => {
+    const { language } = useTranslation();
     const map = useMap();
     const [routeGeometry, setRouteGeometry] = useState<Coords[] | null>(null);
 
@@ -187,14 +191,14 @@ const RouteDrawer: React.FC<{
         let waypointsPromise: Promise<Coords[]> | null = null;
         if (confirmedAssignment) {
             waypointsPromise = Promise.all([
-                geocodeAddress(confirmedAssignment.vehicle.location),
-                geocodeAddress(confirmedAssignment.rideRequest.pickupAddress),
-                geocodeAddress(confirmedAssignment.rideRequest.destinationAddress)
+                geocodeAddress(confirmedAssignment.vehicle.location, language),
+                geocodeAddress(confirmedAssignment.rideRequest.pickupAddress, language),
+                geocodeAddress(confirmedAssignment.rideRequest.destinationAddress, language)
             ]);
         } else if (routeToPreview?.origin && routeToPreview?.destination) {
             waypointsPromise = Promise.all([
-                geocodeAddress(routeToPreview.origin),
-                geocodeAddress(routeToPreview.destination)
+                geocodeAddress(routeToPreview.origin, language),
+                geocodeAddress(routeToPreview.destination, language)
             ]);
         }
 
@@ -206,7 +210,7 @@ const RouteDrawer: React.FC<{
         }
 
         return () => { isMounted = false; };
-    }, [routeToPreview, confirmedAssignment, map, onRouteCalculated]);
+    }, [routeToPreview, confirmedAssignment, map, onRouteCalculated, language]);
     
     if (!routeGeometry) return null;
 
@@ -217,12 +221,13 @@ const RouteDrawer: React.FC<{
 // --- Main Map Component ---
 
 export const OpenStreetMap: React.FC<OpenStreetMapProps> = ({ vehicles, people, routeToPreview, confirmedAssignment }) => {
+    const { t } = useTranslation();
     const [routeSummary, setRouteSummary] = useState<RouteSummary | null>(null);
     const center: Coords = useMemo(() => [48.85, 16.63], []); // Mikulov/Hustopeče area
 
     return (
         <div className="bg-slate-800 p-2 rounded-lg shadow-2xl flex flex-col h-full">
-            <h2 className="text-md font-semibold mb-1 border-b border-slate-700 pb-1">Mapa</h2>
+            <h2 className="text-md font-semibold mb-1 border-b border-slate-700 pb-1">{t('map.title')}</h2>
             <div className="flex-grow w-full rounded-lg bg-slate-700 overflow-hidden border border-slate-700 relative z-0">
                 <MapContainer center={center} zoom={11} className="w-full h-full" scrollWheelZoom={true}>
                     <MapResizeController />
@@ -239,8 +244,8 @@ export const OpenStreetMap: React.FC<OpenStreetMapProps> = ({ vehicles, people, 
                 </MapContainer>
                 {routeSummary && (
                     <div className="absolute bottom-4 left-4 bg-slate-900/80 p-3 rounded-lg text-white text-sm shadow-lg backdrop-blur-sm animate-fade-in z-[1000]">
-                        <p><strong>Vzdálenost:</strong> {routeSummary.distance}</p>
-                        <p><strong>Doba jízdy:</strong> {routeSummary.duration}</p>
+                        <p><strong>{t('map.distance')}:</strong> {routeSummary.distance}</p>
+                        <p><strong>{t('map.duration')}:</strong> {routeSummary.duration}</p>
                     </div>
                 )}
             </div>

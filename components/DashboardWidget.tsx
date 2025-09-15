@@ -1,5 +1,6 @@
 import React from 'react';
 import type { LayoutItem } from '../types';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface DashboardWidgetProps {
   layoutItem: LayoutItem;
@@ -27,6 +28,7 @@ const NumberInput: React.FC<{
 )
 
 export const DashboardWidget: React.FC<DashboardWidgetProps> = ({ layoutItem, isEditMode, onLayoutChange, children }) => {
+  const { t } = useTranslation();
   const { colStart, colSpan, rowStart, rowSpan } = layoutItem;
 
   const style: React.CSSProperties = {
@@ -46,12 +48,12 @@ export const DashboardWidget: React.FC<DashboardWidgetProps> = ({ layoutItem, is
         {isEditMode && (
             <div className="absolute inset-0 bg-black/80 z-10 border-2 border-dashed border-amber-500 rounded-lg flex flex-col justify-center items-center">
                 <div className="p-4 bg-slate-800 rounded-lg shadow-lg">
-                    <h4 className="text-lg font-bold mb-4 text-center">Upravit Widget</h4>
+                    <h4 className="text-lg font-bold mb-4 text-center">{t('dashboardWidget.editTitle')}</h4>
                      <div className="grid grid-cols-2 gap-4">
-                        <NumberInput label="Sloupec Od" value={colStart} onChange={(v) => handleItemChange('colStart', v)} />
-                        <NumberInput label="Šířka (sl.)" value={colSpan} onChange={(v) => handleItemChange('colSpan', v)} />
-                        <NumberInput label="Řádek Od" value={rowStart} onChange={(v) => handleItemChange('rowStart', v)} />
-                        <NumberInput label="Výška (ř.)" value={rowSpan} onChange={(v) => handleItemChange('rowSpan', v)} />
+                        <NumberInput label={t('dashboardWidget.colStart')} value={colStart} onChange={(v) => handleItemChange('colStart', v)} />
+                        <NumberInput label={t('dashboardWidget.colSpan')} value={colSpan} onChange={(v) => handleItemChange('colSpan', v)} />
+                        <NumberInput label={t('dashboardWidget.rowStart')} value={rowStart} onChange={(v) => handleItemChange('rowStart', v)} />
+                        <NumberInput label={t('dashboardWidget.rowSpan')} value={rowSpan} onChange={(v) => handleItemChange('rowSpan', v)} />
                     </div>
                 </div>
             </div>

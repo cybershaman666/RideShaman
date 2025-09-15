@@ -5,13 +5,12 @@ import { AssignmentResult } from './components/AssignmentResult';
 import { Vehicle, RideRequest, AssignmentResultData, VehicleStatus, VehicleType, ErrorResult, RideLog, RideStatus, LayoutConfig, LayoutItem, Notification, Person, PersonRole, WidgetId, Tariff, FlatRateRule, AssignmentAlternative } from './types';
 import { findBestVehicle, generateSms } from './services/dispatchService';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import { ShamanIcon, SettingsIcon, UndoIcon, DownloadIcon, UploadIcon, PhoneIcon, PriceTagIcon, CsvIcon, BarChartIcon } from './components/icons';
+import { ShamanIcon, SettingsIcon, PhoneIcon, PriceTagIcon, BarChartIcon } from './components/icons';
 import { EditVehicleModal } from './components/EditVehicleModal';
 import { RideLogTable } from './components/RideLogTable';
 import { AddVehicleModal } from './components/AddVehicleModal';
 import { EditRideLogModal } from './components/EditRideLogModal';
 import { OpenStreetMap } from './components/OpenStreetMap';
-import { AiToggle } from './components/AiToggle';
 import { ManualAssignmentModal } from './components/ManualAssignmentModal';
 import { DashboardWidget } from './components/DashboardWidget';
 import { NotificationCenter } from './components/NotificationCenter';
@@ -19,6 +18,8 @@ import { ManagePeopleModal } from './components/PhoneDirectoryModal';
 import { TariffSettingsModal } from './components/TariffSettingsModal';
 import { AnalyticsModal } from './components/AnalyticsModal';
 import { SmsPreviewModal } from './components/SmsPreviewModal';
+import { useTranslation } from './contexts/LanguageContext';
+import { SettingsModal } from './components/SettingsModal';
 
 
 // Initial data for people
@@ -77,6 +78,8 @@ export const DEFAULT_TARIFF: Tariff = {
 
 
 const App: React.FC = () => {
+  const { t, language } = useTranslation();
+
   const [people, setPeople] = useState<Person[]>(() => {
     try {
       const savedPeople = localStorage.getItem('rapid-dispatch-people');
@@ -155,6 +158,7 @@ const App: React.FC = () => {
   const [isPeopleModalOpen, setIsPeopleModalOpen] = useState(false);
   const [isTariffModalOpen, setIsTariffModalOpen] = useState(false);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
 
   // --- Data Persistence Effects ---
@@ -230,11 +234,11 @@ const App: React.FC = () => {
 
                     const reminder15Id = `reminder-15-${log.id}`;
                     if (minutesToPickup <= 15 && minutesToPickup > 14 && !notifications.some(n => n.id === reminder15Id)) {
-                        newNotifications.push({ id: reminder15Id, type: 'reminder', title: 'Připomínka: Plánovaná jízda', message: `Jízda pro ${log.customerName} z ${log.pickupAddress} začíná za 15 minut. Přiřaďte vozidlo.`, timestamp: now, rideLogId: log.id });
+                        newNotifications.push({ id: reminder15Id, type: 'reminder', titleKey: 'notifications.scheduledRide.title', messageKey: 'notifications.scheduledRide.message15', messageParams: { customerName: log.customerName, pickupAddress: log.pickupAddress }, timestamp: now, rideLogId: log.id });
                     }
                     const reminder5Id = `reminder-5-${log.id}`;
                     if (minutesToPickup <= 5 && minutesToPickup > 4 && !notifications.some(n => n.id === reminder5Id)) {
-                         newNotifications.push({ id: reminder5Id, type: 'reminder', title: 'Připomínka: Plánovaná jízda', message: `Jízda pro ${log.customerName} z ${log.pickupAddress} začíná za 5 minut. Přiřaďte vozidlo.`, timestamp: now, rideLogId: log.id });
+                         newNotifications.push({ id: reminder5Id, type: 'reminder', titleKey: 'notifications.scheduledRide.title', messageKey: 'notifications.scheduledRide.message5', messageParams: { customerName: log.customerName, pickupAddress: log.pickupAddress }, timestamp: now, rideLogId: log.id });
                     }
                 } catch(e) {
                   console.error("Could not parse schedule time for notification", e)
@@ -251,8 +255,9 @@ const App: React.FC = () => {
                     newNotifications.push({
                         id: notificationId,
                         type: 'delay', // Using 'delay' for a more urgent (red) look
-                        title: 'Zapomenutá SMS?',
-                        message: `U jízdy pro ${log.customerName} (řidič: ${log.driverName || 'N/A'}) nebylo potvrzeno odeslání SMS déle než 5 minut.`,
+                        titleKey: 'notifications.smsReminder.title',
+                        messageKey: 'notifications.smsReminder.message',
+                        messageParams: { customerName: log.customerName, driverName: log.driverName || 'N/A' },
                         timestamp: now,
                         rideLogId: log.id
                     });
@@ -294,8 +299,8 @@ const App: React.FC = () => {
     };
 
     setRideLog(prev => [newLog, ...prev]);
-    alert('Jízda byla naplánována a přidána do seznamu.');
-  }, []);
+    alert(t('notifications.rideScheduled'));
+  }, [t]);
 
   const handleSubmitDispatch = useCallback(async (rideRequest: RideRequest) => {
     setIsLoading(true);
@@ -303,26 +308,26 @@ const App: React.FC = () => {
     setAssignmentResult(null);
     
     try {
-        const result = await findBestVehicle(rideRequest, vehicles, isAiEnabled, tariff);
-        if ('message' in result) {
+        const result = await findBestVehicle(rideRequest, vehicles, isAiEnabled, tariff, language);
+        if ('messageKey' in result) {
           setError(result);
         } else {
           setAssignmentResult(result);
         }
       } catch (e: any) {
-        setError({ message: e.message || "Došlo k neznámé chybě při hledání vozidla." });
+        setError({ messageKey: "error.unknown", message: e.message || "An unknown error occurred." });
       } finally {
         setIsLoading(false);
         if (isAiEnabled) setCooldown(5);
       }
-  }, [vehicles, isAiEnabled, tariff]);
+  }, [vehicles, isAiEnabled, tariff, language]);
   
   const getDriverName = (driverId: number | null) => {
-    return people.find(p => p.id === driverId)?.name || 'Nepřiřazen';
+    return people.find(p => p.id === driverId)?.name || t('general.unassigned');
   };
 
   const handleConfirmAssignment = useCallback((option: AssignmentAlternative) => {
-    const { rideRequest, rideDuration, sms } = assignmentResult!;
+    const { rideRequest, rideDuration } = assignmentResult!;
     const chosenVehicle = option.vehicle;
     
     if (!isAiEnabled) {
@@ -330,7 +335,7 @@ const App: React.FC = () => {
             rideRequest: assignmentResult!.rideRequest, 
             vehicle: chosenVehicle,
             rideDuration: rideDuration || 30,
-            sms: sms,
+            sms: generateSms(assignmentResult!.rideRequest, t),
             estimatedPrice: option.estimatedPrice
         });
         return;
@@ -366,7 +371,7 @@ const App: React.FC = () => {
 
     setRideLog(prev => [newLog, ...prev]);
     setAssignmentResult(null);
-  }, [assignmentResult, isAiEnabled, people]);
+  }, [assignmentResult, isAiEnabled, people, t]);
   
   const handleManualAssignmentConfirm = (durationInMinutes: number) => {
       if (!manualAssignmentDetails) return;
@@ -449,7 +454,7 @@ const App: React.FC = () => {
   };
   
   const handleDeletePerson = (personId: number) => {
-    if (window.confirm("Opravdu chcete smazat tuto osobu? Pokud je přiřazena k vozidlu, bude z něj odebrána.")) {
+    if (window.confirm(t('people.confirmDelete'))) {
       setPeople(prev => prev.filter(p => p.id !== personId));
       // Unassign this person from any vehicle they are driving
       setVehicles(prev => prev.map(v => v.driverId === personId ? { ...v, driverId: null } : v));
@@ -470,7 +475,7 @@ const App: React.FC = () => {
     
     // Show SMS preview if a scheduled ride is dispatched
     if (originalLog && originalLog.status === RideStatus.Scheduled && updatedLog.status === RideStatus.OnTheWay && updatedLog.vehicleId) {
-        const smsText = generateSms(updatedLog);
+        const smsText = generateSms(updatedLog, t);
         const assignedVehicle = vehicles.find(v => v.id === updatedLog.vehicleId);
         const driver = people.find(p => p.id === assignedVehicle?.driverId);
         setSmsToPreview({ sms: smsText, driverPhone: driver?.phone });
@@ -480,7 +485,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteRideLog = (logId: string) => {
-    if (window.confirm("Opravdu si přejete smazat tento záznam o jízdě? Tato akce je nevratná.")) {
+    if (window.confirm(t('rideLog.confirmDelete'))) {
         setRideLog(prev => prev.filter(log => log.id !== logId));
     }
   };
@@ -505,7 +510,7 @@ const App: React.FC = () => {
   };
   
   const resetLayout = () => {
-    if(window.confirm("Opravdu chcete resetovat rozložení na výchozí?")) setLayout(DEFAULT_LAYOUT);
+    if(window.confirm(t('settings.layout.confirmReset'))) setLayout(DEFAULT_LAYOUT);
   };
 
   const handleSaveData = () => {
@@ -534,30 +539,30 @@ const App: React.FC = () => {
 
   const handleExportCsv = () => {
     if (rideLog.length === 0) {
-        alert("Historie jízd je prázdná, není co exportovat.");
+        alert(t('notifications.noRidesToExport'));
         return;
     }
 
     const headers = [
-        'ID', 'Čas záznamu', 'Vozidlo', 'SPZ', 'Typ vozidla', 'Jméno řidiče',
-        'Jméno zákazníka', 'Telefon zákazníka', 'Adresa vyzvednutí', 'Cílová adresa',
-        'Čas vyzvednutí', 'Status', 'SMS odeslána', 'Odhadovaná cena (Kč)', 'Poznámky'
+        'ID', t('csv.timestamp'), t('csv.vehicle'), t('csv.licensePlate'), t('csv.vehicleType'), t('csv.driverName'),
+        t('csv.customerName'), t('csv.customerPhone'), t('csv.pickupAddress'), t('csv.destinationAddress'),
+        t('csv.pickupTime'), t('csv.status'), t('csv.smsSent'), t('csv.estimatedPrice'), t('csv.notes')
     ];
 
     const rows = rideLog.map(log => [
         log.id,
-        new Date(log.timestamp).toLocaleString('cs-CZ'),
+        new Date(log.timestamp).toLocaleString(language),
         log.vehicleName,
         log.vehicleLicensePlate,
-        log.vehicleType,
+        log.vehicleType ? t(`vehicleType.${log.vehicleType}`) : '',
         log.driverName,
         log.customerName,
         log.customerPhone,
         log.pickupAddress,
         log.destinationAddress,
         log.pickupTime,
-        log.status,
-        log.smsSent ? 'Ano' : 'Ne',
+        t(`rideStatus.${log.status}`),
+        log.smsSent ? t('general.yes') : t('general.no'),
         log.estimatedPrice ?? '',
         log.notes ?? ''
     ].map(escapeCsvCell));
@@ -592,12 +597,12 @@ const App: React.FC = () => {
                 if (parsedData.tariff) {
                     setTariff(parsedData.tariff);
                 }
-                alert('Data byla úspěšně načtena.');
+                alert(t('notifications.dataLoadedSuccess'));
             } else {
                 throw new Error("Invalid data structure in JSON file.");
             }
         } catch (error) {
-            alert('Nepodařilo se načíst data. Soubor je poškozený nebo má neplatný formát.');
+            alert(t('notifications.dataLoadedError'));
         } finally {
             if (fileInputRef.current) fileInputRef.current.value = '';
         }
@@ -606,7 +611,7 @@ const App: React.FC = () => {
   };
   
   const triggerLoadFile = () => {
-    if (window.confirm("Načtením dat přepíšete aktuální data. Chcete pokračovat?")) {
+    if (window.confirm(t('settings.data.confirmLoad'))) {
         fileInputRef.current?.click();
     }
   };
@@ -619,10 +624,10 @@ const App: React.FC = () => {
     const filtered = showCompletedRides ? [...rideLog] : rideLog.filter(log => log.status !== RideStatus.Completed && log.status !== RideStatus.Cancelled);
     const sorted = filtered.sort((a, b) => {
         if (sortConfig.key === 'timestamp') return a.timestamp - b.timestamp;
-        return a.customerName.localeCompare(b.customerName, 'cs');
+        return a.customerName.localeCompare(b.customerName, language);
     });
     return sortConfig.direction === 'asc' ? sorted : sorted.reverse();
-  }, [rideLog, sortConfig, showCompletedRides]);
+  }, [rideLog, sortConfig, showCompletedRides, language]);
 
   const widgetMap: Record<WidgetId, React.ReactNode> = {
     dispatch: <DispatchFormComponent onSubmit={handleSubmitDispatch} onSchedule={handleScheduleRide} isLoading={isLoading} rideHistory={rideLog} cooldownTime={cooldown} onRoutePreview={handleRoutePreview} />,
@@ -640,18 +645,13 @@ const App: React.FC = () => {
           <h1 className="text-3xl font-bold text-white">Ride<span className="text-amber-400">Shaman</span></h1>
         </div>
         <div className="flex items-center flex-wrap gap-4">
-            <AiToggle isEnabled={isAiEnabled} onToggle={() => setIsAiEnabled(!isAiEnabled)} />
-             <div className="flex items-center space-x-2">
-                <button onClick={() => setIsTariffModalOpen(true)} className="flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label="Nastavit tarif"><PriceTagIcon /></button>
-                <button onClick={() => setIsPeopleModalOpen(true)} className="flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label="Spravovat osoby"><PhoneIcon /></button>
-                <button onClick={() => setIsAnalyticsModalOpen(true)} className="flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label="Zobrazit reporty"><BarChartIcon /></button>
-                <button onClick={handleSaveData} className="flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label="Uložit data"><DownloadIcon /><span>Uložit</span></button>
-                <button onClick={handleExportCsv} className="flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label="Exportovat do CSV"><CsvIcon /><span>Export CSV</span></button>
-                <button onClick={triggerLoadFile} className="flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label="Načíst data"><UploadIcon /><span>Načíst</span></button>
+            <div className="flex items-center space-x-2">
+                <button onClick={() => setIsTariffModalOpen(true)} className="flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label={t('header.manageTariff')}><PriceTagIcon /></button>
+                <button onClick={() => setIsPeopleModalOpen(true)} className="flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label={t('header.managePeople')}><PhoneIcon /></button>
+                <button onClick={() => setIsAnalyticsModalOpen(true)} className="flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label={t('header.showAnalytics')}><BarChartIcon /></button>
             </div>
             <div className="flex items-center space-x-2">
-                <button onClick={() => setIsEditMode(!isEditMode)} className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md shadow-sm transition-colors ${isEditMode ? 'bg-amber-600 text-white' : 'bg-slate-700 hover:bg-slate-600'}`}><SettingsIcon /><span>{isEditMode ? 'Dokončit úpravy' : 'Upravit rozložení'}</span></button>
-                {isEditMode && (<button onClick={resetLayout} className="flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors"><UndoIcon /><span>Reset</span></button>)}
+                 <button onClick={() => setIsSettingsModalOpen(true)} className="flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm bg-slate-700 hover:bg-slate-600 transition-colors" aria-label={t('header.settings')}><SettingsIcon /></button>
             </div>
         </div>
       </header>
@@ -664,7 +664,7 @@ const App: React.FC = () => {
       
       {(isLoading || assignmentResult || error) && (
            <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start pt-24 p-4 animate-fade-in overflow-y-auto">
-              {isLoading && !assignmentResult && <LoadingSpinner className="max-w-xl w-full"/>}
+              {isLoading && !assignmentResult && <LoadingSpinner />}
               {assignmentResult && (<AssignmentResult result={assignmentResult} error={error} onClear={handleClearResult} onConfirm={handleConfirmAssignment} isAiMode={isAiEnabled} people={people} className="max-w-4xl w-full"/>)}
               {error && !assignmentResult && (<AssignmentResult result={null} error={error} onClear={handleClearResult} onConfirm={() => {}} isAiMode={isAiEnabled} people={people} className="max-w-xl w-full"/>)}
            </div>
@@ -679,6 +679,20 @@ const App: React.FC = () => {
       {isTariffModalOpen && (<TariffSettingsModal initialTariff={tariff} onSave={setTariff} onClose={() => setIsTariffModalOpen(false)} />)}
       {isAnalyticsModalOpen && <AnalyticsModal rideLog={rideLog} vehicles={vehicles} onClose={() => setIsAnalyticsModalOpen(false)} />}
       {smsToPreview && <SmsPreviewModal sms={smsToPreview.sms} driverPhone={smsToPreview.driverPhone} onClose={() => setSmsToPreview(null)} />}
+      {isSettingsModalOpen && (
+        <SettingsModal 
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          isAiEnabled={isAiEnabled}
+          onToggleAi={() => setIsAiEnabled(!isAiEnabled)}
+          isEditMode={isEditMode}
+          onToggleEditMode={() => setIsEditMode(!isEditMode)}
+          onResetLayout={resetLayout}
+          onSaveData={handleSaveData}
+          onLoadData={triggerLoadFile}
+          onExportCsv={handleExportCsv}
+        />
+      )}
       
       <input type="file" ref={fileInputRef} onChange={handleLoadData} accept=".json" className="hidden" aria-hidden="true"/>
     </div>

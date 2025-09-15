@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CloseIcon, ClipboardIcon, CheckCircleIcon, SendIcon } from './icons';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface SmsPreviewModalProps {
   sms: string;
@@ -8,6 +9,7 @@ interface SmsPreviewModalProps {
 }
 
 export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPhone, onClose }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const cleanDriverPhone = driverPhone?.replace(/\s/g, '');
 
@@ -28,12 +30,12 @@ export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPho
       <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-md relative">
         <div className="flex justify-between items-center p-6 border-b border-slate-700">
           <h2 id="sms-preview-title" className="text-xl font-semibold">
-            Připravená SMS pro řidiče
+            {t('smsPreview.title')}
           </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
-            aria-label="Zavřít modální okno"
+            aria-label={t('general.closeModal')}
           >
             <CloseIcon />
           </button>
@@ -41,7 +43,7 @@ export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPho
         <div className="p-6">
           {driverPhone && (
             <p className="mb-4">
-              <strong className='text-gray-400'>Telefon řidiče:</strong> 
+              <strong className='text-gray-400'>{t('smsPreview.driverPhone')}:</strong> 
               <a href={`tel:${driverPhone}`} className="font-mono text-teal-400 hover:underline ml-2">{driverPhone}</a>
             </p>
           )}
@@ -53,7 +55,7 @@ export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPho
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`p-2 rounded-md bg-slate-700 text-gray-300 transition-colors ${!cleanDriverPhone ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-600 hover:text-white'}`}
-                title={cleanDriverPhone ? "Odeslat přes výchozí aplikaci" : "Telefonní číslo řidiče není k dispozici"}
+                title={cleanDriverPhone ? t('smsPreview.sendViaApp') : t('smsPreview.noPhoneNumber')}
                 onClick={(e) => !cleanDriverPhone && e.preventDefault()}
               >
                 <SendIcon className="w-5 h-5"/>
@@ -62,7 +64,7 @@ export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPho
                 type="button"
                 onClick={handleCopy}
                 className="p-2 rounded-md bg-slate-700 hover:bg-slate-600 text-gray-300 hover:text-white transition-colors"
-                title="Kopírovat text"
+                title={t('assignment.copyText')}
               >
                 {copied ? <CheckCircleIcon className="w-5 h-5 text-green-400" /> : <ClipboardIcon className="w-5 h-5"/>}
               </button>
@@ -75,7 +77,7 @@ export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPho
             onClick={onClose}
             className="px-4 py-2 text-sm font-medium rounded-md shadow-sm text-white bg-amber-600 hover:bg-amber-700 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-800"
           >
-            Zavřít
+            {t('general.close')}
           </button>
         </div>
       </div>

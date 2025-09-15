@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Notification } from '../types';
 import { BellIcon, CloseIcon } from './icons';
+import { useTranslation } from '../contexts/LanguageContext';
 
 interface NotificationCenterProps {
   notifications: Notification[];
@@ -11,8 +12,12 @@ const NotificationToast: React.FC<{
   notification: Notification;
   onDismiss: (id: string) => void;
 }> = ({ notification, onDismiss }) => {
-  const { id, type, title, message } = notification;
+  const { t } = useTranslation();
+  const { id, type, titleKey, messageKey, messageParams } = notification;
   const iconColor = type === 'delay' ? 'text-red-400' : 'text-amber-400';
+  
+  const title = t(titleKey);
+  const message = t(messageKey, messageParams);
 
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-lg shadow-2xl w-full max-w-sm p-4 animate-fade-in">
@@ -27,7 +32,7 @@ const NotificationToast: React.FC<{
         <button
           onClick={() => onDismiss(id)}
           className="p-1 -m-1 text-gray-500 hover:text-white transition-colors rounded-full"
-          aria-label="Zavřít upozornění"
+          aria-label={t('notifications.dismiss')}
         >
           <CloseIcon size={20} />
         </button>
