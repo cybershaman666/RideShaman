@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 // Define the shape of the context
 interface LanguageContextType {
@@ -21,35 +22,47 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
 
   const [translations, setTranslations] = useState<Record<string, any>>({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fix: Define the changeLanguage function that was missing.
+  const changeLanguage = useCallback((lang: string) => {
+    if (availableLanguages.includes(lang)) {
+      setLanguage(lang);
+      localStorage.setItem('app-language', lang);
+    }
+  }, []);
 
   useEffect(() => {
     const loadTranslations = async () => {
+      setIsLoading(true);
       try {
         const response = await fetch(`/locales/${language}.json`);
         if (!response.ok) {
-            // Fallback to English if the language file is not found
             console.error(`Could not load ${language}.json, falling back to en.json`);
             const fallbackResponse = await fetch(`/locales/en.json`);
             const fallbackData = await fallbackResponse.json();
             setTranslations(fallbackData);
-            return;
+        } else {
+            const data = await response.json();
+            setTranslations(data);
         }
-        const data = await response.json();
-        setTranslations(data);
       } catch (error) {
         console.error('Failed to load translations:', error);
+        // Attempt to load English as a last-resort fallback
+         try {
+            const fallbackResponse = await fetch(`/locales/en.json`);
+            const fallbackData = await fallbackResponse.json();
+            setTranslations(fallbackData);
+        } catch (e) {
+            setTranslations({}); // Final fallback to avoid crash
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
     loadTranslations();
   }, [language]);
-
-  const changeLanguage = (lang: string) => {
-    if (availableLanguages.includes(lang)) {
-      setLanguage(lang);
-      localStorage.setItem('app-language', lang);
-    }
-  };
 
   const t = useCallback((key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
@@ -62,7 +75,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return key; // Return the key itself as a fallback
     }
 
-    if (params) {
+    if (params && typeof result === 'string') {
       Object.keys(params).forEach(paramKey => {
         result = result.replace(`{${paramKey}}`, String(params[paramKey]));
       });
@@ -70,6 +83,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     return result;
   }, [translations]);
+  
+  if (isLoading) {
+      return (
+          <div className="flex items-center justify-center h-screen w-screen bg-slate-900">
+              <LoadingSpinner text="Loading application..." />
+          </div>
+      );
+  }
 
   return (
     <LanguageContext.Provider value={{ language, changeLanguage, t }}>

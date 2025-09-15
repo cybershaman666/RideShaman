@@ -20,7 +20,7 @@ L.Icon.Default.mergeOptions({
 interface OpenStreetMapProps {
     vehicles: Vehicle[];
     people: Person[];
-    routeToPreview: { origin: string; destination:string; } | null;
+    routeToPreview: string[] | null;
     confirmedAssignment: AssignmentResultData | null;
 }
 
@@ -33,46 +33,32 @@ const SOUTH_MORAVIA_VIEWBOX = '16.3,48.7,17.2,49.3'; // lon_min,lat_min,lon_max,
 
 async function geocodeAddress(address: string, lang: string): Promise<Coords> {
     const cacheKey = `${address}_${lang}`;
-    if (geocodeCache.has(cacheKey)) {
-        return geocodeCache.get(cacheKey)!;
-    }
+    if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey)!;
 
     const fetchCoords = async (addrToTry: string): Promise<Coords | null> => {
         const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}&accept-language=${lang},en;q=0.5`;
-        const response = await fetch(url, {
-            headers: { 'User-Agent': 'RapidDispatchAI/1.0 (https://example.com)' }
-        });
+        const response = await fetch(url, { headers: { 'User-Agent': 'RapidDispatchAI/1.0' } });
         if (!response.ok) return null;
         const data = await response.json();
-        if (data && data.length > 0) {
-            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-        }
-        return null;
+        return data?.[0] ? [parseFloat(data[0].lat), parseFloat(data[0].lon)] : null;
     };
 
     try {
-        // Attempt 1: Full address
         let result = await fetchCoords(address);
-
-        // Attempt 2: Fallback to just the city/town
         if (!result) {
-            const parts = address.split(',').map(p => p.trim());
-            const city = parts[parts.length - 1];
+            const city = address.split(',').map(p => p.trim()).pop();
             if (city && city.toLowerCase() !== address.toLowerCase()) {
-                console.log(`Map geocoding for "${address}" failed. Falling back to "${city}".`);
                 result = await fetchCoords(city);
             }
         }
-        
         if (result) {
             geocodeCache.set(cacheKey, result);
             return result;
         }
-
         throw new Error(`Address not found: ${address}`);
     } catch (error) {
          console.error(`Could not geocode address for map: ${address}`, error);
-         throw error; // Let the calling component handle it (e.g., log it)
+         throw error;
     }
 }
 
@@ -83,7 +69,7 @@ async function getRoute(waypoints: Coords[]): Promise<{geometry: Coords[], summa
     const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson`;
     const response = await fetch(url);
     const data = await response.json();
-    if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+    if (data.code === 'Ok' && data.routes?.length > 0) {
         const route = data.routes[0];
         const geometry = route.geometry.coordinates.map((c: number[]) => [c[1], c[0]]); // Swap lon,lat to lat,lon
         const summary = {
@@ -96,8 +82,6 @@ async function getRoute(waypoints: Coords[]): Promise<{geometry: Coords[], summa
 }
 
 // --- Internal Map Components ---
-
-// Helper component to fix map rendering issues in dynamic containers
 const MapResizeController: React.FC = () => {
     const map = useMap();
     useEffect(() => {
@@ -119,32 +103,13 @@ const VehicleMarker: React.FC<{ vehicle: Vehicle, people: Person[] }> = ({ vehic
             .catch(err => console.error(err));
     }, [vehicle.location, language]);
 
-    const iconHtml = `
-      <div class="p-1 bg-slate-900/80 rounded-full backdrop-blur-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${vehicle.type === VehicleType.Car ? 'text-amber-400' : 'text-gray-200'}">
-          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
-          <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/>
-        </svg>
-      </div>`;
-      
-    const customIcon = new L.DivIcon({
-        html: iconHtml,
-        className: 'vehicle-marker',
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-        popupAnchor: [0, -20]
-    });
+    const iconHtml = `<div class="p-1 bg-slate-900/80 rounded-full backdrop-blur-sm"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${vehicle.type === VehicleType.Car ? 'text-amber-400' : 'text-gray-200'}"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/></svg></div>`;
+    const customIcon = new L.DivIcon({ html: iconHtml, className: 'vehicle-marker', iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20] });
     
     if (!position) return null;
     return (
         <Marker position={position} icon={customIcon}>
-            <Popup>
-                <div className="text-sm">
-                    <p className="font-bold text-base">{vehicle.name}</p>
-                    <p>{driver?.name || t('general.unassigned')}</p>
-                    <p className="font-mono text-xs">{vehicle.licensePlate}</p>
-                </div>
-            </Popup>
+            <Popup><div className="text-sm"><p className="font-bold text-base">{vehicle.name}</p><p>{driver?.name || t('general.unassigned')}</p><p className="font-mono text-xs">{vehicle.licensePlate}</p></div></Popup>
         </Marker>
     );
 };
@@ -160,10 +125,9 @@ const RouteDrawer: React.FC<{
 
     useEffect(() => {
         let isMounted = true;
-
-        const calculateAndDrawRoute = async (waypointsPromise: Promise<Coords[]>) => {
+        const calculateAndDrawRoute = async (stops: string[]) => {
             try {
-                const waypoints = await waypointsPromise;
+                const waypoints = await Promise.all(stops.map(stop => geocodeAddress(stop, language)));
                 if (!isMounted || waypoints.length < 2) {
                     setRouteGeometry(null);
                     onRouteCalculated(null);
@@ -171,7 +135,7 @@ const RouteDrawer: React.FC<{
                 }
 
                 const routeData = await getRoute(waypoints);
-                if (isMounted && routeData && routeData.geometry.length > 0) {
+                if (isMounted && routeData?.geometry.length > 0) {
                     setRouteGeometry(routeData.geometry);
                     onRouteCalculated(routeData.summary);
                     map.fitBounds(L.latLngBounds(routeData.geometry), { padding: [50, 50] });
@@ -188,22 +152,16 @@ const RouteDrawer: React.FC<{
             }
         };
 
-        let waypointsPromise: Promise<Coords[]> | null = null;
+        let stopsToDraw: string[] | null = null;
         if (confirmedAssignment) {
-            waypointsPromise = Promise.all([
-                geocodeAddress(confirmedAssignment.vehicle.location, language),
-                geocodeAddress(confirmedAssignment.rideRequest.pickupAddress, language),
-                geocodeAddress(confirmedAssignment.rideRequest.destinationAddress, language)
-            ]);
-        } else if (routeToPreview?.origin && routeToPreview?.destination) {
-            waypointsPromise = Promise.all([
-                geocodeAddress(routeToPreview.origin, language),
-                geocodeAddress(routeToPreview.destination, language)
-            ]);
+            const finalStops = confirmedAssignment.optimizedStops || confirmedAssignment.rideRequest.stops;
+            stopsToDraw = [confirmedAssignment.vehicle.location, ...finalStops];
+        } else if (routeToPreview && routeToPreview.length >= 2) {
+            stopsToDraw = routeToPreview;
         }
 
-        if (waypointsPromise) {
-            calculateAndDrawRoute(waypointsPromise);
+        if (stopsToDraw) {
+            calculateAndDrawRoute(stopsToDraw);
         } else {
             setRouteGeometry(null);
             onRouteCalculated(null);
@@ -213,13 +171,11 @@ const RouteDrawer: React.FC<{
     }, [routeToPreview, confirmedAssignment, map, onRouteCalculated, language]);
     
     if (!routeGeometry) return null;
-
     return <Polyline positions={routeGeometry} color="#f59e0b" weight={5} opacity={0.8} />;
 };
 
 
 // --- Main Map Component ---
-
 export const OpenStreetMap: React.FC<OpenStreetMapProps> = ({ vehicles, people, routeToPreview, confirmedAssignment }) => {
     const { t } = useTranslation();
     const [routeSummary, setRouteSummary] = useState<RouteSummary | null>(null);

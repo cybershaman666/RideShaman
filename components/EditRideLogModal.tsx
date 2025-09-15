@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { RideLog, Vehicle, Person } from '../types';
 import { RideStatus, VehicleStatus, PersonRole } from '../types';
-import { CloseIcon } from './icons';
+import { CloseIcon, PlusIcon, TrashIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
 
 interface EditRideLogModalProps {
@@ -32,19 +32,27 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
     }));
   };
   
+  const handleStopChange = (index: number, value: string) => {
+    const newStops = [...formData.stops];
+    newStops[index] = value;
+    setFormData(prev => ({...prev, stops: newStops}));
+  };
+  
+  const addStop = () => {
+    setFormData(prev => ({...prev, stops: [...prev.stops, '']}));
+  };
+
+  const removeStop = (index: number) => {
+    if(formData.stops.length > 2) {
+      setFormData(prev => ({...prev, stops: prev.stops.filter((_, i) => i !== index)}));
+    }
+  };
+  
   const handleVehicleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedVehicleId = e.target.value ? parseInt(e.target.value, 10) : null;
     
     if (!selectedVehicleId) {
-        // Clear all assignment fields if vehicle is deselected
-        setFormData(prev => ({
-            ...prev,
-            vehicleId: null,
-            vehicleName: null,
-            vehicleLicensePlate: null,
-            vehicleType: null,
-            driverName: null,
-        }));
+        setFormData(prev => ({ ...prev, vehicleId: null, vehicleName: null, vehicleLicensePlate: null, vehicleType: null, driverName: null }));
         return;
     }
 
@@ -57,7 +65,7 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
             vehicleName: selectedVehicle.name,
             vehicleLicensePlate: selectedVehicle.licensePlate,
             vehicleType: selectedVehicle.type,
-            driverName: driver ? driver.name : null, // Auto-fill driver from vehicle
+            driverName: driver ? driver.name : null,
         }));
     }
   };
@@ -67,17 +75,12 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
     e.preventDefault();
     let dataToSave = { ...formData };
     
-    // If a vehicle is newly assigned and status is set to OnTheWay, estimate a completion time
-    // This is crucial for the vehicle to become available again automatically
     if (dataToSave.vehicleId && dataToSave.status === RideStatus.OnTheWay && log.status !== RideStatus.OnTheWay) {
         try {
             const pickupTimestamp = new Date(dataToSave.pickupTime).getTime();
-            // If pickup is in the future, base completion on that. Otherwise, base it on now.
             const baseTimestamp = pickupTimestamp > Date.now() ? pickupTimestamp : Date.now();
-            // Assume 30 min ride duration as a default
             dataToSave.estimatedCompletionTimestamp = baseTimestamp + 30 * 60 * 1000;
         } catch (err) {
-             // Fallback if date is invalid (e.g., 'ihned'), use now + 30 mins
              dataToSave.estimatedCompletionTimestamp = Date.now() + 30 * 60 * 1000;
         }
     }
@@ -97,13 +100,7 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
           <h2 id="edit-log-title" className="text-xl font-semibold">
             {t('rideLog.edit.title')}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-            aria-label={t('general.closeModal')}
-          >
-            <CloseIcon />
-          </button>
+          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label={t('general.closeModal')}><CloseIcon /></button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
@@ -117,14 +114,22 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
                 <input type="tel" id="customerPhone" name="customerPhone" value={formData.customerPhone} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
               </div>
             </div>
+            
             <div>
-              <label htmlFor="pickupAddress" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.pickupAddress')}</label>
-              <input type="text" id="pickupAddress" name="pickupAddress" value={formData.pickupAddress} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
+              <label className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.stops.title')}</label>
+              <div className="space-y-2">
+                {formData.stops.map((stop, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <input type="text" value={stop} onChange={(e) => handleStopChange(index, e.target.value)} className="flex-grow bg-slate-700 border border-slate-600 rounded-md py-2 px-3 text-white"/>
+                    {formData.stops.length > 2 && <button type="button" onClick={() => removeStop(index)} className="p-1 text-red-500 hover:text-red-400 rounded-full"><TrashIcon size={18}/></button>}
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={addStop} className="mt-2 flex items-center space-x-2 text-sm text-amber-400 hover:text-amber-300">
+                <PlusIcon size={16}/><span>{t('dispatch.stops.addStop')}</span>
+              </button>
             </div>
-            <div>
-              <label htmlFor="destinationAddress" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.destinationAddress')}</label>
-              <input type="text" id="destinationAddress" name="destinationAddress" value={formData.destinationAddress} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"/>
-            </div>
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="pickupTime" className="block text-sm font-medium text-gray-300 mb-1">{t('dispatch.pickupTime')}</label>
@@ -133,9 +138,7 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
               <div>
                 <label htmlFor="status" className="block text-sm font-medium text-gray-300 mb-1">{t('rideLog.table.status')}</label>
                 <select id="status" name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
-                  {Object.values(RideStatus).map(status => (
-                    <option key={status} value={status}>{t(`rideStatus.${status}`)}</option>
-                  ))}
+                  {Object.values(RideStatus).map(status => (<option key={status} value={status}>{t(`rideStatus.${status}`)}</option>))}
                 </select>
               </div>
             </div>
@@ -146,32 +149,16 @@ export const EditRideLogModal: React.FC<EditRideLogModalProps> = ({ log, vehicle
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label htmlFor="vehicleId" className="block text-sm font-medium text-gray-300 mb-1">{t('rideLog.edit.availableVehicles')}</label>
-                        <select
-                            id="vehicleId"
-                            name="vehicleId"
-                            value={formData.vehicleId || ''}
-                            onChange={handleVehicleSelect}
-                            className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                        >
+                        <select id="vehicleId" name="vehicleId" value={formData.vehicleId || ''} onChange={handleVehicleSelect} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                             <option value="">-- {t('general.unassigned')} --</option>
-                            {availableVehicles.map(v => (
-                                <option key={v.id} value={v.id}>{v.name} ({v.licensePlate})</option>
-                            ))}
+                            {availableVehicles.map(v => (<option key={v.id} value={v.id}>{v.name} ({v.licensePlate})</option>))}
                         </select>
                     </div>
                     <div>
                         <label htmlFor="driverName" className="block text-sm font-medium text-gray-300 mb-1">{t('rideLog.table.driver')}</label>
-                        <select
-                            id="driverName"
-                            name="driverName"
-                            value={formData.driverName || ''}
-                            onChange={handleChange}
-                            className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                        >
+                        <select id="driverName" name="driverName" value={formData.driverName || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
                             <option value="">-- {t('rideLog.edit.selectDriver')} --</option>
-                            {drivers.map(d => (
-                                <option key={d.id} value={d.name}>{d.name}</option>
-                            ))}
+                            {drivers.map(d => (<option key={d.id} value={d.name}>{d.name}</option>))}
                         </select>
                     </div>
                     <div className="sm:col-span-2">

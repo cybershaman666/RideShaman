@@ -57,6 +57,12 @@
     "findingVehicle": "Hledám vozidlo...",
     "findVehicle": "Najít vozidlo",
     "cooldown": "Zkuste to znovu za {cooldownTime}s",
+    "stops": {
+        "title": "Zastávky",
+        "startPlaceholder": "Adresa vyzvednutí",
+        "destinationPlaceholder": "Cílová adresa / Další zastávka",
+        "addStop": "Přidat zastávku"
+    },
     "validation": {
       "pickupRequired": "Adresa nástupu je povinná.",
       "destinationRequired": "Cílová adresa je povinná.",
@@ -64,7 +70,9 @@
       "phoneRequired": "Telefonní číslo je povinné.",
       "pickupTimeRequired": "Čas vyzvednutí je povinný.",
       "futureTimeRequired": "Plánovaný čas musí být v budoucnosti.",
-      "positivePassengers": "Počet cestujících musí být kladné číslo."
+      "positivePassengers": "Počet cestujících musí být kladné číslo.",
+      "allStopsRequired": "Všechny zastávky musí být vyplněny.",
+      "atLeastTwoStops": "Musí být zadány alespoň 2 zastávky (start a cíl)."
     }
   },
   "vehicles": {
@@ -139,7 +147,8 @@
     "smsSuggestion": "Návrh SMS pro řidiče",
     "sendSmsApp": "Odeslat přes výchozí aplikaci",
     "noDriverAssigned": "Vozidlu není přiřazen žádný řidič",
-    "copyText": "Kopírovat text"
+    "copyText": "Kopírovat text",
+    "optimizedRoute": "Optimalizovaná trasa"
   },
   "rideLog": {
     "title": "Historie Jízd",
@@ -160,6 +169,7 @@
       "awaitingAssignment": "Čeká na přiřazení",
       "from": "Z",
       "to": "Do",
+      "stops": "zastávky",
       "pickup": "Vyzvednout",
       "note": "Pozn",
       "sortBy": "Seřadit podle {label}",
@@ -293,7 +303,8 @@
       "passengers": "Počet osob",
       "pickupTime": "Vyzvednout",
       "pickupASAP": "co nejdříve",
-      "note": "Poznámka"
+      "note": "Poznámka",
+      "route": "Trasa"
   },
   "csv": {
     "timestamp": "Čas záznamu",

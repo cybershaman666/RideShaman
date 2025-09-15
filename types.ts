@@ -51,8 +51,7 @@ export interface Vehicle {
 }
 
 export interface RideRequest {
-  pickupAddress: string;
-  destinationAddress: string;
+  stops: string[]; // First stop is pickup, the rest are destinations
   customerName: string;
   customerPhone: string;
   passengers: number;
@@ -77,6 +76,7 @@ export interface AssignmentResultData {
   rideDistance?: number;
   alternatives: AssignmentAlternative[];
   rideRequest: RideRequest;
+  optimizedStops?: string[]; // The reordered list of stops
 }
 
 export interface ErrorResult {
@@ -93,8 +93,7 @@ export interface RideLog {
   vehicleType: VehicleType | null;
   customerName: string;
   customerPhone: string;
-  pickupAddress: string;
-  destinationAddress: string;
+  stops: string[]; // Full route, first is pickup
   pickupTime: string;
   status: RideStatus;
   vehicleId: number | null;

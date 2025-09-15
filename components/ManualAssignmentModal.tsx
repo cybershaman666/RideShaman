@@ -71,7 +71,12 @@ export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ de
           <div className="p-6 space-y-4">
             <div className='text-sm space-y-2'>
                 <p><strong className='text-gray-400'>{t('manualAssignment.customer')}:</strong> {rideRequest.customerName}</p>
-                <p><strong className='text-gray-400'>{t('manualAssignment.route')}:</strong> {rideRequest.pickupAddress} <span className='text-gray-400'>→</span> {rideRequest.destinationAddress}</p>
+                <div>
+                  <strong className='text-gray-400'>{t('manualAssignment.route')}:</strong>
+                  <ol className="list-decimal list-inside text-gray-300">
+                    {rideRequest.stops.map((stop, index) => <li key={index}>{stop}</li>)}
+                  </ol>
+                </div>
                 <p><strong className='text-gray-400'>{t('manualAssignment.vehicle')}:</strong> {vehicle.name} ({driver?.name || t('general.unassigned')})</p>
             </div>
             <div className='border-t border-slate-700 pt-4'>

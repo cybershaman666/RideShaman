@@ -153,7 +153,7 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   
-  const [routeToPreview, setRouteToPreview] = useState<{ origin: string, destination: string } | null>(null);
+  const [routeToPreview, setRouteToPreview] = useState<string[] | null>(null);
   const [showCompletedRides, setShowCompletedRides] = useState(true);
   const [isPeopleModalOpen, setIsPeopleModalOpen] = useState(false);
   const [isTariffModalOpen, setIsTariffModalOpen] = useState(false);
@@ -234,11 +234,11 @@ const App: React.FC = () => {
 
                     const reminder15Id = `reminder-15-${log.id}`;
                     if (minutesToPickup <= 15 && minutesToPickup > 14 && !notifications.some(n => n.id === reminder15Id)) {
-                        newNotifications.push({ id: reminder15Id, type: 'reminder', titleKey: 'notifications.scheduledRide.title', messageKey: 'notifications.scheduledRide.message15', messageParams: { customerName: log.customerName, pickupAddress: log.pickupAddress }, timestamp: now, rideLogId: log.id });
+                        newNotifications.push({ id: reminder15Id, type: 'reminder', titleKey: 'notifications.scheduledRide.title', messageKey: 'notifications.scheduledRide.message15', messageParams: { customerName: log.customerName, pickupAddress: log.stops[0] || '' }, timestamp: now, rideLogId: log.id });
                     }
                     const reminder5Id = `reminder-5-${log.id}`;
                     if (minutesToPickup <= 5 && minutesToPickup > 4 && !notifications.some(n => n.id === reminder5Id)) {
-                         newNotifications.push({ id: reminder5Id, type: 'reminder', titleKey: 'notifications.scheduledRide.title', messageKey: 'notifications.scheduledRide.message5', messageParams: { customerName: log.customerName, pickupAddress: log.pickupAddress }, timestamp: now, rideLogId: log.id });
+                         newNotifications.push({ id: reminder5Id, type: 'reminder', titleKey: 'notifications.scheduledRide.title', messageKey: 'notifications.scheduledRide.message5', messageParams: { customerName: log.customerName, pickupAddress: log.stops[0] || '' }, timestamp: now, rideLogId: log.id });
                     }
                 } catch(e) {
                   console.error("Could not parse schedule time for notification", e)
@@ -285,8 +285,7 @@ const App: React.FC = () => {
         vehicleType: null,
         customerName: rideRequest.customerName,
         customerPhone: rideRequest.customerPhone,
-        pickupAddress: rideRequest.pickupAddress,
-        destinationAddress: rideRequest.destinationAddress,
+        stops: rideRequest.stops,
         passengers: rideRequest.passengers,
         pickupTime: rideRequest.pickupTime,
         status: RideStatus.Scheduled,
@@ -327,15 +326,17 @@ const App: React.FC = () => {
   };
 
   const handleConfirmAssignment = useCallback((option: AssignmentAlternative) => {
-    const { rideRequest, rideDuration } = assignmentResult!;
+    const { rideRequest, rideDuration, optimizedStops } = assignmentResult!;
     const chosenVehicle = option.vehicle;
+    const finalStops = optimizedStops || rideRequest.stops;
+    const destination = finalStops[finalStops.length - 1];
     
     if (!isAiEnabled) {
         setManualAssignmentDetails({ 
             rideRequest: assignmentResult!.rideRequest, 
             vehicle: chosenVehicle,
             rideDuration: rideDuration || 30,
-            sms: generateSms(assignmentResult!.rideRequest, t),
+            sms: generateSms({ ...assignmentResult!.rideRequest, stops: finalStops }, t),
             estimatedPrice: option.estimatedPrice
         });
         return;
@@ -345,7 +346,7 @@ const App: React.FC = () => {
     const durationInMinutes = rideDuration ? alternative.eta + rideDuration : alternative.eta + 30;
     const freeAt = Date.now() + durationInMinutes * 60 * 1000;
     
-    setVehicles(prev => prev.map(v => v.id === chosenVehicle.id ? { ...v, status: VehicleStatus.Busy, freeAt, location: rideRequest.destinationAddress } : v));
+    setVehicles(prev => prev.map(v => v.id === chosenVehicle.id ? { ...v, status: VehicleStatus.Busy, freeAt, location: destination } : v));
 
     const newLog: RideLog = {
       id: `ride-${Date.now()}`,
@@ -356,8 +357,7 @@ const App: React.FC = () => {
       vehicleType: chosenVehicle.type,
       customerName: rideRequest.customerName,
       customerPhone: rideRequest.customerPhone,
-      pickupAddress: rideRequest.pickupAddress,
-      destinationAddress: rideRequest.destinationAddress,
+      stops: finalStops,
       passengers: rideRequest.passengers,
       pickupTime: rideRequest.pickupTime,
       status: RideStatus.OnTheWay,
@@ -377,12 +377,14 @@ const App: React.FC = () => {
       if (!manualAssignmentDetails) return;
       
       const { rideRequest, vehicle, estimatedPrice } = manualAssignmentDetails;
+      const finalStops = assignmentResult?.optimizedStops || rideRequest.stops;
+      const destination = finalStops[finalStops.length - 1];
       const alternative = assignmentResult?.alternatives.find(a => a.vehicle.id === vehicle.id);
       const eta = alternative?.eta ?? 0;
       const totalBusyTime = eta + durationInMinutes;
       const freeAt = Date.now() + totalBusyTime * 60 * 1000;
 
-      setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: VehicleStatus.Busy, freeAt, location: rideRequest.destinationAddress } : v));
+      setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: VehicleStatus.Busy, freeAt, location: destination } : v));
 
       const newLog: RideLog = {
         id: `ride-${Date.now()}`,
@@ -393,8 +395,7 @@ const App: React.FC = () => {
         vehicleType: vehicle.type,
         customerName: rideRequest.customerName,
         customerPhone: rideRequest.customerPhone,
-        pickupAddress: rideRequest.pickupAddress,
-        destinationAddress: rideRequest.destinationAddress,
+        stops: finalStops,
         passengers: rideRequest.passengers,
         pickupTime: rideRequest.pickupTime,
         status: RideStatus.OnTheWay,
@@ -416,9 +417,9 @@ const App: React.FC = () => {
     setError(null);
   }, []);
   
-  const handleRoutePreview = useCallback((origin: string, destination: string) => {
-    if (origin.trim() && destination.trim()) {
-      setRouteToPreview({ origin, destination });
+  const handleRoutePreview = useCallback((stops: string[]) => {
+    if (stops.length >= 2 && stops.every(s => s.trim())) {
+      setRouteToPreview(stops);
     } else {
       setRouteToPreview(null);
     }
@@ -558,8 +559,8 @@ const App: React.FC = () => {
         log.driverName,
         log.customerName,
         log.customerPhone,
-        log.pickupAddress,
-        log.destinationAddress,
+        log.stops[0] || '', // Pickup
+        log.stops.slice(1).join('; ') || '', // Destinations
         log.pickupTime,
         t(`rideStatus.${log.status}`),
         log.smsSent ? t('general.yes') : t('general.no'),
@@ -664,7 +665,7 @@ const App: React.FC = () => {
       
       {(isLoading || assignmentResult || error) && (
            <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start pt-24 p-4 animate-fade-in overflow-y-auto">
-              {isLoading && !assignmentResult && <LoadingSpinner />}
+              {isLoading && !assignmentResult && <LoadingSpinner text={t('loading.calculating')} />}
               {assignmentResult && (<AssignmentResult result={assignmentResult} error={error} onClear={handleClearResult} onConfirm={handleConfirmAssignment} isAiMode={isAiEnabled} people={people} className="max-w-4xl w-full"/>)}
               {error && !assignmentResult && (<AssignmentResult result={null} error={error} onClear={handleClearResult} onConfirm={() => {}} isAiMode={isAiEnabled} people={people} className="max-w-xl w-full"/>)}
            </div>

@@ -57,6 +57,12 @@
     "findingVehicle": "Finding vehicle...",
     "findVehicle": "Find Vehicle",
     "cooldown": "Try again in {cooldownTime}s",
+    "stops": {
+        "title": "Stops",
+        "startPlaceholder": "Pickup address",
+        "destinationPlaceholder": "Destination / Next stop",
+        "addStop": "Add stop"
+    },
     "validation": {
       "pickupRequired": "Pickup address is required.",
       "destinationRequired": "Destination address is required.",
@@ -64,7 +70,9 @@
       "phoneRequired": "Phone number is required.",
       "pickupTimeRequired": "Pickup time is required.",
       "futureTimeRequired": "Scheduled time must be in the future.",
-      "positivePassengers": "Number of passengers must be a positive number."
+      "positivePassengers": "Number of passengers must be a positive number.",
+      "allStopsRequired": "All stops must be filled.",
+      "atLeastTwoStops": "At least 2 stops are required (pickup and destination)."
     }
   },
   "vehicles": {
@@ -117,13 +125,13 @@
       "vignetteExpiry": "Vignette Expiry",
       "notes": "Vehicle Notes"
     },
-     "warnings": {
-        "serviceOverdue": "Service overdue by {km} km.",
-        "serviceDue": "Service due in {km} km.",
-        "inspectionExpired": "Inspection expired!",
-        "inspectionExpires": "Inspection expires on {date}.",
-        "vignetteExpired": "Vignette expired!",
-        "vignetteExpires": "Vignette expires on {date}."
+    "warnings": {
+      "serviceOverdue": "Service overdue by {km} km.",
+      "serviceDue": "Service due in {km} km.",
+      "inspectionExpired": "Inspection expired!",
+      "inspectionExpires": "Inspection expires on {date}.",
+      "vignetteExpired": "Vignette expired!",
+      "vignetteExpires": "Vignette expires on {date}."
     }
   },
   "assignment": {
@@ -139,7 +147,8 @@
     "smsSuggestion": "SMS suggestion for driver",
     "sendSmsApp": "Send via default app",
     "noDriverAssigned": "No driver assigned to this vehicle",
-    "copyText": "Copy text"
+    "copyText": "Copy text",
+    "optimizedRoute": "Optimized Route"
   },
   "rideLog": {
     "title": "Ride History",
@@ -160,6 +169,7 @@
       "awaitingAssignment": "Awaiting assignment",
       "from": "From",
       "to": "To",
+      "stops": "stops",
       "pickup": "Pickup",
       "note": "Note",
       "sortBy": "Sort by {label}",
@@ -205,12 +215,145 @@
     "addPerson": "Add Person",
     "confirmDelete": "Are you sure you want to delete this person? If they are assigned to a vehicle, they will be unassigned.",
     "fields": {
-        "name": "Name",
-        "phone": "Phone"
+      "name": "Name",
+      "phone": "Phone"
     },
     "validation": {
-        "nameAndPhoneRequired": "Name and phone number are required."
+      "nameAndPhoneRequired": "Name and phone number are required."
     }
   },
   "tariff": {
-    "title": "Tariff
+    "title": "Tariff Settings",
+    "rideRates": "Ride Rates",
+    "startingFee": "Starting Fee",
+    "pricePerKmCar": "Price/km (Car)",
+    "pricePerKmVan": "Price/km (Van)",
+    "flatRates": "Flat Rates",
+    "routeName": "Route Name",
+    "routeNamePlaceholder": "Description of route (e.g., Within Mikulov)",
+    "price": "Price",
+    "deleteFlatRate": "Delete flat rate",
+    "noFlatRates": "No flat rates defined.",
+    "resetToDefault": "Reset to Default",
+    "saveTariff": "Save Tariff",
+    "confirmReset": "Are you sure you want to reset the tariff to its default settings?"
+  },
+  "analytics": {
+    "title": "Analytics & Reports",
+    "exportPdf": "Export PDF",
+    "exporting": "Exporting...",
+    "exportError": "An error occurred while exporting to PDF.",
+    "ranges": {
+      "today": "Today",
+      "last7d": "Last 7 days",
+      "last30d": "Last 30 days",
+      "allTime": "All Time"
+    },
+    "cards": {
+      "completedRides": "Completed Rides",
+      "totalRevenue": "Total Revenue",
+      "avgPrice": "Avg. Price per Ride",
+      "cancelledRides": "Cancelled Rides"
+    },
+    "chartTitle": "Rides per Vehicle",
+    "noChartData": "No data available for chart.",
+    "tableTitle": "Vehicle Statistics",
+    "table": {
+      "vehicle": "Vehicle",
+      "licensePlate": "License Plate",
+      "completedRides": "Completed Rides",
+      "revenue": "Revenue"
+    },
+    "noData": "No data for the selected period."
+  },
+  "smsPreview": {
+    "title": "SMS Ready for Driver",
+    "driverPhone": "Driver's Phone",
+    "sendViaApp": "Send via default app",
+    "noPhoneNumber": "Driver's phone number is not available"
+  },
+  "manualAssignment": {
+    "title": "Manual Assignment",
+    "customer": "Customer",
+    "route": "Route",
+    "vehicle": "Vehicle",
+    "busyDuration": "Busy for (minutes)",
+    "googleMapsEstimate": "Google Maps estimates this ride will take {duration} minutes. You can adjust this value.",
+    "confirmAndAssign": "Confirm and Assign",
+    "validation": {
+      "validDuration": "Please enter a valid duration in minutes."
+    }
+  },
+  "dashboardWidget": {
+    "editTitle": "Edit Widget",
+    "colStart": "Col Start",
+    "colSpan": "Col Span",
+    "rowStart": "Row Start",
+    "rowSpan": "Row Span"
+  },
+  "aiToggle": {
+    "manual": "Manual",
+    "aiMode": "AI Mode"
+  },
+  "sms": {
+    "from": "From",
+    "to": "To",
+    "name": "Name",
+    "phone": "Phone",
+    "passengers": "Persons",
+    "pickupTime": "Pickup",
+    "pickupASAP": "ASAP",
+    "note": "Note",
+    "route": "Route"
+  },
+  "csv": {
+    "timestamp": "Timestamp",
+    "vehicle": "Vehicle",
+    "licensePlate": "License Plate",
+    "vehicleType": "Vehicle Type",
+    "driverName": "Driver Name",
+    "customerName": "Customer Name",
+    "customerPhone": "Customer Phone",
+    "pickupAddress": "Pickup Address",
+    "destinationAddress": "Destination Address",
+    "pickupTime": "Pickup Time",
+    "status": "Status",
+    "smsSent": "SMS Sent",
+    "estimatedPrice": "Estimated Price (CZK)",
+    "notes": "Notes"
+  },
+  "error": {
+    "missingApiKey": "Configuration key for AI services is missing.",
+    "noVehiclesInService": "All vehicles are currently out of service.",
+    "geocodingFailed": "Error geocoding addresses.",
+    "mainRouteCalculationFailed": "Failed to calculate the main route distance.",
+    "insufficientCapacity": "No available vehicle has enough capacity for the requested number of passengers.",
+    "unknown": "An unknown error occurred."
+  },
+  "vehicleType": {
+    "CAR": "Car",
+    "VAN": "Van"
+  },
+  "vehicleStatus": {
+    "AVAILABLE": "Available",
+    "BUSY": "Busy",
+    "OUT_OF_SERVICE": "Out of Service",
+    "NOT_DRIVING_TODAY": "Not Driving Today"
+  },
+  "rideStatus": {
+    "SCHEDULED": "Scheduled",
+    "ON_THE_WAY": "On the Way",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "personRole": {
+    "DRIVER": "Driver",
+    "MANAGEMENT": "Management",
+    "DISPATCHER": "Dispatcher"
+  },
+  "personRolePlural": {
+    "DRIVER": "Drivers",
+    "MANAGEMENT": "Management",
+    "DISPATCHER": "Dispatchers"
+  }
+}

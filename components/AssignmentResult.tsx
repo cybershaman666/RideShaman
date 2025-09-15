@@ -71,7 +71,7 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   
-  const smsText = result ? generateSms(result.rideRequest, t) : '';
+  const smsText = result ? generateSms({ ...result.rideRequest, stops: result.optimizedStops || result.rideRequest.stops }, t) : '';
 
   const handleCopy = () => {
     if (smsText) {
@@ -105,7 +105,7 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
 
   if (!result) return null;
 
-  const { vehicle, eta, waitTime, alternatives, estimatedPrice, rideDistance } = result;
+  const { vehicle, eta, waitTime, alternatives, estimatedPrice, rideDistance, optimizedStops } = result;
   
   const allOptions = isAiMode 
     ? [{ vehicle, eta, waitTime, estimatedPrice }, ...alternatives]
@@ -113,6 +113,7 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
     
   const driver = people.find(p => p.id === result.vehicle.driverId);
   const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
+  const finalStops = optimizedStops || result.rideRequest.stops;
 
 
   return (
@@ -131,6 +132,19 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
                 {t('general.cancel')}
             </button>
         </div>
+
+        {optimizedStops && (
+            <div className="bg-slate-700/50 p-4 rounded-lg">
+                <h3 className="text-md font-semibold text-amber-400 mb-2">{t('assignment.optimizedRoute')}</h3>
+                <ol className="list-decimal list-inside text-gray-200 space-y-1">
+                    {finalStops.map((stop, index) => (
+                        <li key={index}>
+                            <span className={index === 0 ? 'font-bold' : ''}>{stop}</span>
+                        </li>
+                    ))}
+                </ol>
+            </div>
+        )}
       
         <div className="space-y-4">
             {allOptions.map((opt, index) => (
