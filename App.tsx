@@ -70,9 +70,9 @@ export const DEFAULT_TARIFF: Tariff = {
   pricePerKmCar: 40,
   pricePerKmVan: 60,
   flatRates: [
-    { id: 1, name: "V rámci Hustopečí", price: 80 },
-    { id: 2, name: "V rámci Mikulova", price: 100 },
-    { id: 3, name: "Zaječí - diskotéka Retro", price: 200 },
+    { id: 1, name: "V rámci Hustopečí", priceCar: 80, priceVan: 120 },
+    { id: 2, name: "V rámci Mikulova", priceCar: 100, priceVan: 150 },
+    { id: 3, name: "Zaječí - diskotéka Retro", priceCar: 200, priceVan: 300 },
   ],
 };
 
@@ -92,7 +92,22 @@ const App: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
     try {
       const savedVehicles = localStorage.getItem('rapid-dispatch-vehicles');
-      return savedVehicles ? JSON.parse(savedVehicles) : initialVehicles;
+      if (!savedVehicles) return initialVehicles;
+      
+      const parsedVehicles = JSON.parse(savedVehicles);
+      // Data migration for old string-based statuses to new enum keys
+      return parsedVehicles.map((v: any) => {
+        const statusMap: { [key: string]: VehicleStatus } = {
+          'volné': VehicleStatus.Available,
+          'obsazené': VehicleStatus.Busy,
+          'mimo provoz': VehicleStatus.OutOfService,
+          'dnes nejede': VehicleStatus.NotDrivingToday,
+        };
+        if (v.status && typeof v.status === 'string' && statusMap[v.status.toLowerCase()]) {
+          v.status = statusMap[v.status.toLowerCase()];
+        }
+        return v;
+      });
     } catch {
       return initialVehicles;
     }
@@ -101,7 +116,22 @@ const App: React.FC = () => {
   const [rideLog, setRideLog] = useState<RideLog[]>(() => {
     try {
       const savedLog = localStorage.getItem('rapid-dispatch-ride-log');
-      return savedLog ? JSON.parse(savedLog) : [];
+      if (!savedLog) return [];
+      
+      const parsedLog = JSON.parse(savedLog);
+      // Data migration for old ride log structure (pickupAddress -> stops)
+      return parsedLog.map((log: any) => {
+        if (!log.stops && log.pickupAddress) {
+          log.stops = [log.pickupAddress, log.destinationAddress || ''];
+          delete log.pickupAddress;
+          delete log.destinationAddress;
+        }
+        // Ensure stops is always an array to prevent crashes from malformed data
+        if (!Array.isArray(log.stops)) {
+          log.stops = [];
+        }
+        return log;
+      });
     } catch {
       return [];
     }
@@ -119,7 +149,24 @@ const App: React.FC = () => {
   const [tariff, setTariff] = useState<Tariff>(() => {
     try {
         const savedTariff = localStorage.getItem('rapid-dispatch-tariff');
-        return savedTariff ? JSON.parse(savedTariff) : DEFAULT_TARIFF;
+        if (!savedTariff) return DEFAULT_TARIFF;
+
+        const parsed = JSON.parse(savedTariff);
+        // Data migration for flat rates from single 'price' to 'priceCar'/'priceVan'
+        if (parsed.flatRates && parsed.flatRates.some((r: any) => r.price !== undefined)) {
+            parsed.flatRates = parsed.flatRates.map((r: any) => {
+                if (r.price !== undefined) {
+                    return {
+                        id: r.id,
+                        name: r.name,
+                        priceCar: r.price,
+                        priceVan: Math.round(r.price * 1.5) // Sensible default based on 60/40 per-km rate
+                    };
+                }
+                return r;
+            });
+        }
+        return parsed;
     } catch {
         return DEFAULT_TARIFF;
     }
@@ -301,13 +348,13 @@ const App: React.FC = () => {
     alert(t('notifications.rideScheduled'));
   }, [t]);
 
-  const handleSubmitDispatch = useCallback(async (rideRequest: RideRequest) => {
+  const handleSubmitDispatch = useCallback(async (rideRequest: RideRequest, optimize: boolean) => {
     setIsLoading(true);
     setError(null);
     setAssignmentResult(null);
     
     try {
-        const result = await findBestVehicle(rideRequest, vehicles, isAiEnabled, tariff, language);
+        const result = await findBestVehicle(rideRequest, vehicles, isAiEnabled, tariff, language, optimize);
         if ('messageKey' in result) {
           setError(result);
         } else {

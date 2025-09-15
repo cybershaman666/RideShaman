@@ -57,6 +57,7 @@
     "findingVehicle": "Fahrzeug wird gesucht...",
     "findVehicle": "Fahrzeug finden",
     "cooldown": "Versuchen Sie es in {cooldownTime}s erneut",
+    "optimizeStops": "Reihenfolge optimieren",
     "stops": {
         "title": "Haltestellen",
         "startPlaceholder": "Abholadresse",
@@ -232,6 +233,8 @@
     "routeName": "Routenname",
     "routeNamePlaceholder": "Routenbeschreibung (z.B. Innerhalb von Mikulov)",
     "price": "Preis",
+    "priceCar": "Preis (PKW)",
+    "priceVan": "Preis (Transporter)",
     "deleteFlatRate": "Pauschale löschen",
     "noFlatRates": "Keine Pauschalpreise definiert.",
     "resetToDefault": "Auf Standard zurücksetzen",

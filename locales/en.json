@@ -57,6 +57,7 @@
     "findingVehicle": "Finding vehicle...",
     "findVehicle": "Find Vehicle",
     "cooldown": "Try again in {cooldownTime}s",
+    "optimizeStops": "Optimize stop order",
     "stops": {
         "title": "Stops",
         "startPlaceholder": "Pickup address",
@@ -232,6 +233,8 @@
     "routeName": "Route Name",
     "routeNamePlaceholder": "Description of route (e.g., Within Mikulov)",
     "price": "Price",
+    "priceCar": "Price (Car)",
+    "priceVan": "Price (Van)",
     "deleteFlatRate": "Delete flat rate",
     "noFlatRates": "No flat rates defined.",
     "resetToDefault": "Reset to Default",

@@ -57,6 +57,7 @@
     "findingVehicle": "Hledám vozidlo...",
     "findVehicle": "Najít vozidlo",
     "cooldown": "Zkuste to znovu za {cooldownTime}s",
+    "optimizeStops": "Optimalizovat pořadí zastávek",
     "stops": {
         "title": "Zastávky",
         "startPlaceholder": "Adresa vyzvednutí",
@@ -232,6 +233,8 @@
     "routeName": "Název trasy",
     "routeNamePlaceholder": "Popis trasy (např. V rámci Mikulova)",
     "price": "Cena",
+    "priceCar": "Cena (Osobák)",
+    "priceVan": "Cena (Dodávka)",
     "deleteFlatRate": "Smazat paušální sazbu",
     "noFlatRates": "Nejsou definovány žádné paušální sazby.",
     "resetToDefault": "Obnovit výchozí",

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { RideRequest, Vehicle, AssignmentResultData, ErrorResult, AssignmentAlternative, Tariff, RideLog } from '../types';
+import type { RideRequest, Vehicle, AssignmentResultData, ErrorResult, AssignmentAlternative, Tariff, RideLog, FlatRateRule } from '../types';
 import { VehicleStatus, VehicleType } from '../types';
 
 const GEMINI_API_KEY = process.env.API_KEY;
@@ -40,9 +40,11 @@ const SOUTH_MORAVIA_VIEWBOX = '16.3,48.7,17.2,49.3'; // lon_min,lat_min,lon_max,
  */
 async function geocodeAddress(address: string): Promise<{ lat: number; lon: number }> {
     if (geocodeCache.has(address)) return geocodeCache.get(address)!;
+    const proxyUrl = 'https://corsproxy.io/?';
 
     const fetchCoords = async (addrToTry: string, lang: string) => {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}&accept-language=${lang}`;
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}&accept-language=${lang}`;
+        const url = `${proxyUrl}${nominatimUrl}`;
         const response = await fetch(url, { headers: { 'User-Agent': 'RapidDispatchAI/1.0' } });
         if (!response.ok) return null;
         const data = await response.json();
@@ -107,13 +109,84 @@ function calculatePrice(
         if ((rateNameLower.includes("mikulov") && pickupLower.includes("mikulov") && destLower.includes("mikulov")) ||
             (rateNameLower.includes("hustopeč") && pickupLower.includes("hustopeče") && destLower.includes("hustopeče")) ||
             (rateNameLower.includes("zaječí") && (pickupLower.includes("zaječí") || destLower.includes("zaječí")))) {
-            return rate.price;
+            return vehicleType === VehicleType.Van ? rate.priceVan : rate.priceCar;
         }
     }
 
     const pricePerKm = vehicleType === VehicleType.Car ? tariff.pricePerKmCar : tariff.pricePerKmVan;
     return Math.round(tariff.startingFee + (rideDistanceKm * pricePerKm));
 }
+
+/**
+ * Calculates a travel time matrix between a set of coordinates.
+ */
+async function buildTravelMatrix(coords: { lat: number; lon: number }[], unit: 'seconds' | 'minutes'): Promise<number[][]> {
+    const matrix: number[][] = [];
+    for (const origin of coords) {
+        const row: number[] = [];
+        for (const destination of coords) {
+            if (origin === destination) {
+                row.push(0);
+                continue;
+            }
+            const route = await getOsrmRoute(`${origin.lon},${origin.lat};${destination.lon},${destination.lat}`);
+            if (route) {
+                const value = unit === 'minutes' ? Math.round(route.duration / 60) : route.duration;
+                row.push(value);
+            } else {
+                row.push(unit === 'minutes' ? 999 : 99999); // Use a large number for errors
+            }
+        }
+        matrix.push(row);
+    }
+    return matrix;
+}
+
+/**
+ * Optimizes route order using a simple Nearest Neighbor heuristic.
+ * This is a non-AI fallback for route optimization.
+ * Returns the new order of original indices, e.g., [0, 2, 1, 3].
+ */
+function optimizeRouteNearestNeighbor(matrix: number[][]): number[] {
+    if (matrix.length < 3) {
+        return Array.from({ length: matrix.length }, (_, i) => i);
+    }
+
+    const numPoints = matrix.length;
+    const path = [0]; // Start at the pickup location (index 0)
+    const visited = new Set<number>([0]);
+    let lastPoint = 0;
+
+    while (path.length < numPoints) {
+        let nearestPoint = -1;
+        let minDistance = Infinity;
+
+        for (let i = 0; i < numPoints; i++) {
+            if (!visited.has(i)) {
+                if (matrix[lastPoint][i] < minDistance) {
+                    minDistance = matrix[lastPoint][i];
+                    nearestPoint = i;
+                }
+            }
+        }
+
+        if (nearestPoint !== -1) {
+            path.push(nearestPoint);
+            visited.add(nearestPoint);
+            lastPoint = nearestPoint;
+        } else {
+            for (let i = 0; i < numPoints; i++) {
+                if (!visited.has(i)) {
+                    path.push(i);
+                    visited.add(i);
+                }
+            }
+            break;
+        }
+    }
+    return path;
+}
+
 
 /**
  * Main function to find the best vehicle for a multi-stop ride request.
@@ -124,6 +197,7 @@ export async function findBestVehicle(
   isAiEnabled: boolean,
   tariff: Tariff,
   language: string,
+  optimize: boolean
 ): Promise<AssignmentResultData | ErrorResult> {
     if (isAiEnabled && !GEMINI_API_KEY) return { messageKey: "error.missingApiKey" };
     
@@ -135,23 +209,28 @@ export async function findBestVehicle(
     let optimizedStops: string[] | undefined = undefined;
 
     try {
-        const allStopCoords = await Promise.all(rideRequest.stops.map(stop => geocodeAddress(stop)));
+        let allStopCoords = await Promise.all(rideRequest.stops.map(stop => geocodeAddress(stop)));
         const vehicleCoords = await Promise.all(vehiclesInService.map(v => geocodeAddress(v.location)));
         const pickupCoords = allStopCoords[0];
         
-        // --- Optimize route if more than 2 stops and AI is enabled ---
-        if (rideRequest.stops.length > 2 && isAiEnabled) {
-            const travelTimeMatrix = await buildTravelTimeMatrix(allStopCoords);
-            const optimalOrder = await getOptimalRouteOrder(travelTimeMatrix);
-            
-            const reorderedStops = [rideRequest.stops[0]];
-            const reorderedCoords = [allStopCoords[0]];
-            optimalOrder.forEach(i => {
-                reorderedStops.push(rideRequest.stops[i + 1]);
-                reorderedCoords.push(allStopCoords[i + 1]);
-            });
+        // --- Optimize route if more than 2 stops and requested ---
+        if (rideRequest.stops.length > 2 && optimize) {
+             let reorderingIndices: number[];
 
-            allStopCoords.splice(0, allStopCoords.length, ...reorderedCoords);
+             if (isAiEnabled) {
+                const travelTimeMatrix = await buildTravelMatrix(allStopCoords, 'minutes');
+                const optimalDestinationOrder = await getOptimalRouteOrder(travelTimeMatrix, rideRequest.stops.length - 1);
+                reorderingIndices = [0, ...optimalDestinationOrder]; // Prepend start index
+            } else {
+                // Use non-AI Nearest Neighbor heuristic
+                const travelMatrix = await buildTravelMatrix(allStopCoords, 'seconds');
+                reorderingIndices = optimizeRouteNearestNeighbor(travelMatrix);
+            }
+
+            const reorderedStops = reorderingIndices.map(i => rideRequest.stops[i]);
+            const reorderedCoords = reorderingIndices.map(i => allStopCoords[i]);
+
+            allStopCoords = reorderedCoords;
             optimizedStops = reorderedStops;
             sms = generateSms({ ...rideRequest, stops: optimizedStops }, t);
         }
@@ -168,34 +247,31 @@ export async function findBestVehicle(
             const route = etasData[index];
             const eta = route ? Math.round(route.duration / 60) : 999;
             const waitTime = vehicle.status === VehicleStatus.Busy && vehicle.freeAt ? Math.max(0, Math.round((vehicle.freeAt - Date.now()) / 60000)) : 0;
+            const finalDestination = (optimizedStops || rideRequest.stops).slice(-1)[0];
             return {
                 vehicle,
                 eta: eta + waitTime,
                 waitTime,
-                estimatedPrice: calculatePrice(rideRequest.stops[0], rideRequest.stops[rideRequest.stops.length - 1], rideDistanceKm, vehicle.type, tariff),
+                estimatedPrice: calculatePrice(rideRequest.stops[0], finalDestination, rideDistanceKm, vehicle.type, tariff),
             };
         });
 
-        if (!isAiEnabled) {
-            return {
-                vehicle: vehiclesInService[0],
-                eta: 0,
-                estimatedPrice: 0,
-                sms,
-                alternatives: alternativesWithEta.sort((a, b) => a.eta - b.eta),
-                rideRequest,
-                rideDuration: rideDurationMinutes,
-                rideDistance: rideDistanceKm,
-                optimizedStops
-            };
-        }
-        
+        alternativesWithEta.sort((a, b) => a.eta - b.eta);
+
         const suitableVehicles = alternativesWithEta.filter(alt => alt.vehicle.capacity >= rideRequest.passengers);
         if (suitableVehicles.length === 0) return { messageKey: "error.insufficientCapacity", message: `${rideRequest.passengers}` };
         
-        suitableVehicles.sort((a, b) => a.eta - b.eta);
-        const bestAlternative = await chooseBestVehicleWithAI(rideRequest, suitableVehicles);
-        const otherAlternatives = suitableVehicles.filter(v => v.vehicle.id !== bestAlternative.vehicle.id);
+        let bestAlternative: AssignmentAlternative;
+        let otherAlternatives: AssignmentAlternative[];
+
+        if (isAiEnabled) {
+            bestAlternative = await chooseBestVehicleWithAI(rideRequest, suitableVehicles);
+            otherAlternatives = suitableVehicles.filter(v => v.vehicle.id !== bestAlternative.vehicle.id);
+        } else {
+            // In non-AI mode, the best vehicle is simply the first one in the list sorted by ETA.
+            bestAlternative = suitableVehicles[0];
+            otherAlternatives = suitableVehicles.slice(1);
+        }
 
         return {
             vehicle: bestAlternative.vehicle,
@@ -215,62 +291,61 @@ export async function findBestVehicle(
     }
 }
 
-async function buildTravelTimeMatrix(coords: {lat: number, lon: number}[]) {
-    const destinations = coords.slice(1);
-    const matrix: number[][] = [];
-    for (const origin of destinations) {
-        const row: number[] = [];
-        for (const destination of destinations) {
-            if (origin === destination) {
-                row.push(0);
-                continue;
-            }
-            const route = await getOsrmRoute(`${origin.lon},${origin.lat};${destination.lon},${destination.lat}`);
-            row.push(route ? Math.round(route.duration / 60) : 999);
-        }
-        matrix.push(row);
-    }
-    return matrix;
-}
+async function getOptimalRouteOrder(matrix: number[][], numDestinations: number): Promise<number[]> {
+    const destinationIndices = Array.from({ length: numDestinations }, (_, i) => i + 1);
 
-async function getOptimalRouteOrder(matrix: number[][]): Promise<number[]> {
     const prompt = `
-        Solve the Traveling Salesperson Problem for the given travel time matrix.
-        The matrix represents travel times in minutes between destinations (excluding the start point).
-        The goal is to find the shortest path that visits each destination exactly once.
-        The start point is fixed and is not part of the matrix.
-        The matrix is zero-indexed, corresponding to destinations 1, 2, 3, etc.
+        You are a logistics expert tasked with finding the most efficient route.
+        Given a travel time matrix, find the shortest path that starts at index 0 and visits all other specified destinations exactly once. The path does not need to return to the start.
 
-        Travel Time Matrix (in minutes):
+        **Problem Details:**
+        - **Start Point:** Index 0 (fixed).
+        - **Destinations to Visit:** Indices ${JSON.stringify(destinationIndices)}.
+        - **Travel Time Matrix (in minutes):** Each entry matrix[i][j] is the time from location i to location j.
         ${JSON.stringify(matrix)}
 
-        Return a single, valid JSON object containing an array of zero-based indices representing the optimal order of destinations to visit.
-        For example, for 3 destinations (indices 0, 1, 2), a valid output would be {"optimal_order": [2, 0, 1]}.
-        Do not include any other text or markdown.
+        **Required Output:**
+        Return a single, valid JSON object with a key "optimal_order". The value should be an array of the destination indices (e.g., ${JSON.stringify(destinationIndices)}) in the most efficient order.
+        For example, if the destinations are [1, 2, 3], a valid output showing the optimal path 0 -> 3 -> 1 -> 2 would be:
+        {"optimal_order": [3, 1, 2]}
+
+        Do not include any other text, explanations, or markdown formatting.
     `;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: {
-            temperature: 0,
-            responseMimeType: "application/json",
-            responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                    optimal_order: {
-                        type: Type.ARRAY,
-                        items: { type: Type.INTEGER }
-                    }
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                temperature: 0,
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        optimal_order: {
+                            type: Type.ARRAY,
+                            items: { type: Type.INTEGER }
+                        }
+                    },
+                    required: ["optimal_order"]
                 },
-                required: ["optimal_order"]
-            },
-        }
-    });
+            }
+        });
 
-    const result = JSON.parse(response.text.trim());
-    return result.optimal_order;
+        const result = JSON.parse(response.text.trim());
+        // Basic validation
+        if (Array.isArray(result.optimal_order) && result.optimal_order.length === numDestinations) {
+            return result.optimal_order;
+        } else {
+            console.error("AI returned an invalid route order. Falling back to original order.", result);
+            return destinationIndices; // Fallback to original order
+        }
+    } catch (error) {
+        console.error("Error getting optimal route from AI. Falling back to original order.", error);
+        return destinationIndices; // Fallback to original order on error
+    }
 }
+
 
 async function chooseBestVehicleWithAI(rideRequest: RideRequest, suitableVehicles: AssignmentAlternative[]): Promise<AssignmentAlternative> {
     const vehicleDataForPrompt = suitableVehicles.map(alt => ({ id: alt.vehicle.id, name: alt.vehicle.name, capacity: alt.vehicle.capacity, eta: alt.eta, price: alt.estimatedPrice }));

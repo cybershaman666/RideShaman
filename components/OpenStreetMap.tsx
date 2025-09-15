@@ -34,9 +34,11 @@ const SOUTH_MORAVIA_VIEWBOX = '16.3,48.7,17.2,49.3'; // lon_min,lat_min,lon_max,
 async function geocodeAddress(address: string, lang: string): Promise<Coords> {
     const cacheKey = `${address}_${lang}`;
     if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey)!;
+    const proxyUrl = 'https://corsproxy.io/?';
 
     const fetchCoords = async (addrToTry: string): Promise<Coords | null> => {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}&accept-language=${lang},en;q=0.5`;
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addrToTry)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}&accept-language=${lang},en;q=0.5`;
+        const url = `${proxyUrl}${nominatimUrl}`;
         const response = await fetch(url, { headers: { 'User-Agent': 'RapidDispatchAI/1.0' } });
         if (!response.ok) return null;
         const data = await response.json();

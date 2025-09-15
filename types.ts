@@ -134,7 +134,8 @@ export interface Notification {
 export interface FlatRateRule {
   id: number;
   name: string;
-  price: number;
+  priceCar: number;
+  priceVan: number;
 }
 
 export interface Tariff {

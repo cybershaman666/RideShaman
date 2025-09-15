@@ -4,7 +4,7 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { PlusIcon, TrashIcon } from './icons';
 
 interface DispatchFormProps {
-  onSubmit: (rideRequest: RideRequest) => void;
+  onSubmit: (rideRequest: RideRequest, optimize: boolean) => void;
   onSchedule: (rideRequest: RideRequest) => void;
   isLoading: boolean;
   rideHistory: RideLog[];
@@ -103,6 +103,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
   const [isScheduled, setIsScheduled] = useState(false);
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof RideRequest | 'stops', string>>>({});
+  const [optimizeStops, setOptimizeStops] = useState(true);
 
   const uniqueAddresses = useMemo(() => {
     const addresses = new Set<string>();
@@ -201,7 +202,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
         if (isScheduled) {
             onSchedule(rideRequest);
         } else {
-            onSubmit(rideRequest);
+            onSubmit(rideRequest, stops.length > 2 && optimizeStops);
         }
     }
   };
@@ -290,6 +291,20 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
             </div>
         </div>
 
+        {stops.length > 2 && (
+            <div className={`flex items-center justify-end space-x-2 mt-2 py-2 border-t border-slate-700`}>
+              <label htmlFor="optimize-stops" className={`text-sm text-gray-300 cursor-pointer`}>
+                {t('dispatch.optimizeStops')}
+              </label>
+              <input
+                type="checkbox"
+                id="optimize-stops"
+                checked={optimizeStops}
+                onChange={(e) => setOptimizeStops(e.target.checked)}
+                className="h-4 w-4 rounded bg-slate-700 border-slate-600 text-amber-500 focus:ring-amber-600 focus:ring-offset-slate-800 cursor-pointer"
+              />
+            </div>
+        )}
 
         <button
             type="submit"

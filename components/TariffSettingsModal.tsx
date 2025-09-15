@@ -42,7 +42,7 @@ export const TariffSettingsModal: React.FC<TariffSettingsModalProps> = ({ initia
     setTariff(prev => ({ ...prev, [name]: parseInt(value, 10) || 0 }));
   };
   
-  const handleFlatRateChange = (id: number, field: 'name' | 'price', value: string | number) => {
+  const handleFlatRateChange = (id: number, field: 'name' | 'priceCar' | 'priceVan', value: string | number) => {
     setTariff(prev => ({
         ...prev,
         flatRates: prev.flatRates.map(rate => 
@@ -52,7 +52,7 @@ export const TariffSettingsModal: React.FC<TariffSettingsModalProps> = ({ initia
   };
   
   const addFlatRate = () => {
-    const newRate: FlatRateRule = { id: Date.now(), name: '', price: 0 };
+    const newRate: FlatRateRule = { id: Date.now(), name: '', priceCar: 0, priceVan: 0 };
     setTariff(prev => ({ ...prev, flatRates: [...prev.flatRates, newRate] }));
   };
   
@@ -73,7 +73,7 @@ export const TariffSettingsModal: React.FC<TariffSettingsModalProps> = ({ initia
 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-center p-4 animate-fade-in" role="dialog" aria-modal="true">
-      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-lg relative">
+      <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-2xl relative">
         <div className="flex justify-between items-center p-6 border-b border-slate-700">
           <h2 className="text-xl font-semibold">{t('tariff.title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors" aria-label={t('general.close')}><CloseIcon /></button>
@@ -96,8 +96,8 @@ export const TariffSettingsModal: React.FC<TariffSettingsModalProps> = ({ initia
                 </div>
                 <div className="space-y-3">
                     {tariff.flatRates.map(rate => (
-                        <div key={rate.id} className="grid grid-cols-10 gap-3 items-center">
-                            <div className="col-span-6">
+                        <div key={rate.id} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                            <div className="col-span-12 sm:col-span-6">
                                 <label htmlFor={`rate-name-${rate.id}`} className="sr-only">{t('tariff.routeName')}</label>
                                 <input 
                                     type="text" 
@@ -108,20 +108,33 @@ export const TariffSettingsModal: React.FC<TariffSettingsModalProps> = ({ initia
                                     className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                 />
                             </div>
-                            <div className="col-span-3">
-                                 <label htmlFor={`rate-price-${rate.id}`} className="sr-only">{t('tariff.price')}</label>
+                            <div className="col-span-6 sm:col-span-2">
+                                 <label htmlFor={`rate-price-car-${rate.id}`} className="sr-only">{t('tariff.priceCar')}</label>
                                  <div className="relative">
                                     <input 
                                         type="number" 
-                                        id={`rate-price-${rate.id}`}
-                                        value={rate.price} 
-                                        onChange={(e) => handleFlatRateChange(rate.id, 'price', parseInt(e.target.value, 10) || 0)}
+                                        id={`rate-price-car-${rate.id}`}
+                                        value={rate.priceCar} 
+                                        onChange={(e) => handleFlatRateChange(rate.id, 'priceCar', parseInt(e.target.value, 10) || 0)}
                                         className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 pl-3 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                     />
                                     <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">Kč</span>
                                 </div>
                             </div>
-                            <div className="col-span-1">
+                             <div className="col-span-6 sm:col-span-2">
+                                 <label htmlFor={`rate-price-van-${rate.id}`} className="sr-only">{t('tariff.priceVan')}</label>
+                                 <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        id={`rate-price-van-${rate.id}`}
+                                        value={rate.priceVan} 
+                                        onChange={(e) => handleFlatRateChange(rate.id, 'priceVan', parseInt(e.target.value, 10) || 0)}
+                                        className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 pl-3 pr-10 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                                    />
+                                    <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">Kč</span>
+                                </div>
+                            </div>
+                            <div className="col-span-12 sm:col-span-2 flex justify-end">
                                 <button onClick={() => deleteFlatRate(rate.id)} className="p-2 text-red-500 hover:text-red-400 rounded-full hover:bg-red-500/10" aria-label={t('tariff.deleteFlatRate')}><CloseIcon size={18}/></button>
                             </div>
                         </div>
