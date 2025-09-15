@@ -114,9 +114,7 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
 
   const { vehicle, eta, waitTime, alternatives, estimatedPrice, rideDistance, optimizedStops } = result;
   
-  const allOptions = isAiMode 
-    ? [{ vehicle, eta, waitTime, estimatedPrice }, ...alternatives]
-    : alternatives;
+  const allOptions = [{ vehicle, eta, waitTime, estimatedPrice }, ...alternatives];
     
   return (
     <div className={`bg-slate-800 p-6 rounded-lg shadow-2xl animate-fade-in space-y-6 ${className || ''}`}>

@@ -141,21 +141,26 @@ function calculatePrice(
     destinationAddress: string,
     rideDistanceKm: number,
     vehicleType: VehicleType,
-    tariff: Tariff,
+    passengers: number,
+    tariff: Tariff
 ): number {
     const pickupLower = pickupAddress.toLowerCase();
     const destLower = destinationAddress.toLowerCase();
+
+    // A ride for more than 4 passengers requires a van price, regardless of the vehicle used.
+    // Also, if a van is used for a smaller ride, the van price still applies.
+    const chargeVanPrice = vehicleType === VehicleType.Van || passengers > 4;
 
     for (const rate of tariff.flatRates) {
         const rateNameLower = rate.name.toLowerCase();
         if ((rateNameLower.includes("mikulov") && pickupLower.includes("mikulov") && destLower.includes("mikulov")) ||
             (rateNameLower.includes("hustopeč") && pickupLower.includes("hustopeče") && destLower.includes("hustopeče")) ||
             (rateNameLower.includes("zaječí") && (pickupLower.includes("zaječí") || destLower.includes("zaječí")))) {
-            return vehicleType === VehicleType.Van ? rate.priceVan : rate.priceCar;
+            return chargeVanPrice ? rate.priceVan : rate.priceCar;
         }
     }
 
-    const pricePerKm = vehicleType === VehicleType.Car ? tariff.pricePerKmCar : tariff.pricePerKmVan;
+    const pricePerKm = chargeVanPrice ? tariff.pricePerKmVan : tariff.pricePerKmCar;
     return Math.round(tariff.startingFee + (rideDistanceKm * pricePerKm));
 }
 
@@ -294,7 +299,7 @@ export async function findBestVehicle(
                 vehicle,
                 eta: eta + waitTime,
                 waitTime,
-                estimatedPrice: calculatePrice(rideRequest.stops[0], finalDestination, rideDistanceKm, vehicle.type, tariff),
+                estimatedPrice: calculatePrice(rideRequest.stops[0], finalDestination, rideDistanceKm, vehicle.type, rideRequest.passengers, tariff),
             };
         });
 
