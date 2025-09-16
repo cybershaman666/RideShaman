@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import type { AssignmentResultData, ErrorResult, Person, AssignmentAlternative, MessagingApp } from '../types';
-import { CarIcon, AlertTriangleIcon, CheckCircleIcon, ClipboardIcon, ShareIcon, NavigationIcon } from './icons';
+import React, { useState, useMemo } from 'react';
+import type { AssignmentResultData, ErrorResult, Person, AssignmentAlternative, MessagingApp, FuelPrices } from '../types';
+import { CarIcon, AlertTriangleIcon, CheckCircleIcon, ClipboardIcon, ShareIcon, NavigationIcon, FuelIcon } from './icons';
 import { VehicleType } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
-import { generateSms, generateShareLink, generateNavigationUrl } from '../services/dispatchService';
+import { generateSms, generateShareLink } from '../services/dispatchService';
 
 interface AssignmentResultProps {
   result: AssignmentResultData | null;
@@ -14,6 +14,7 @@ interface AssignmentResultProps {
   people: Person[];
   messagingApp: MessagingApp;
   className?: string;
+  fuelPrices: FuelPrices;
 }
 
 const VehicleOption: React.FC<{
@@ -23,10 +24,20 @@ const VehicleOption: React.FC<{
     isAiMode: boolean;
     people: Person[];
     rideDistance?: number;
-}> = ({ option, isRecommended, onConfirm, isAiMode, people, rideDistance }) => {
+    fuelPrices: FuelPrices;
+}> = ({ option, isRecommended, onConfirm, isAiMode, people, rideDistance, fuelPrices }) => {
     const { t } = useTranslation();
     const { vehicle, eta, waitTime, estimatedPrice } = option;
     const driver = people.find(p => p.id === vehicle.driverId);
+    
+    const estimatedFuelCost = useMemo(() => {
+        if (vehicle.fuelType && vehicle.fuelConsumption && vehicle.fuelConsumption > 0 && rideDistance) {
+            const price = fuelPrices[vehicle.fuelType];
+            const cost = (rideDistance / 100) * vehicle.fuelConsumption * price;
+            return Math.round(cost);
+        }
+        return null;
+    }, [vehicle, rideDistance, fuelPrices]);
 
     return (
          <div className={`p-4 rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 ${isRecommended && isAiMode ? 'bg-amber-900/50 border border-amber-700' : 'bg-slate-700/50'}`}>
@@ -42,6 +53,12 @@ const VehicleOption: React.FC<{
               </div>
             </div>
             <div className="flex items-center justify-between sm:justify-end sm:space-x-6">
+                {estimatedFuelCost !== null && (
+                    <div className="text-center" title={t('assignment.fuelCost')}>
+                        <p className="text-sm text-gray-400 flex items-center justify-center gap-1"><FuelIcon size={14} /> {t('assignment.cost')}</p>
+                        <p className="text-xl font-bold text-red-400">{estimatedFuelCost} Kč</p>
+                    </div>
+                )}
                 <div className="text-center">
                     <p className="text-sm text-gray-400">{t('assignment.price')}</p>
                     <p className="text-xl font-bold text-white">{estimatedPrice > 0 ? `${estimatedPrice} Kč` : t('general.notApplicable')}</p>
@@ -68,7 +85,7 @@ const VehicleOption: React.FC<{
     )
 };
 
-export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, error, onClear, onConfirm, isAiMode, people, messagingApp, className }) => {
+export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, error, onClear, onConfirm, isAiMode, people, messagingApp, className, fuelPrices }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   
@@ -154,6 +171,7 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
                     isAiMode={isAiMode}
                     people={people}
                     rideDistance={rideDistance}
+                    fuelPrices={fuelPrices}
                 />
             ))}
         </div>

@@ -28,6 +28,11 @@
       "title": "Komunikace",
       "preferredApp": "Preferovaná aplikace pro zprávy"
     },
+    "fuel": {
+      "title": "Ceny paliva",
+      "diesel": "Cena nafty",
+      "petrol": "Cena benzínu"
+    },
     "visibility": {
       "title": "Viditelnost widgetů",
       "dispatch": "Formulář pro zadání",
@@ -105,7 +110,8 @@
       "status": "Status",
       "location": "Lokace",
       "warnings": "Upozornění",
-      "actions": "Akce"
+      "actions": "Akce",
+      "totalFuelCost": "Celkové náklady na palivo ze zaznamenaných jízd"
     },
     "add": {
       "title": "Přidat nové vozidlo",
@@ -137,7 +143,9 @@
       "lastServiceMileage": "Poslední servis (km)",
       "inspectionExpiry": "Platnost STK do",
       "vignetteExpiry": "Platnost dálniční známky do",
-      "notes": "Poznámky k vozidlu"
+      "notes": "Poznámky k vozidlu",
+      "fuelType": "Typ paliva",
+      "fuelConsumption": "Spotřeba (L/100km)"
     },
     "warnings": {
         "serviceOverdue": "Servis po termínu o {km} km.",
@@ -165,7 +173,9 @@
     "openNavigation": "Otevřít navigaci",
     "noDriverAssigned": "Vozidlu není přiřazen žádný řidič",
     "copyText": "Kopírovat text",
-    "optimizedRoute": "Optimalizovaná trasa"
+    "optimizedRoute": "Optimalizovaná trasa",
+    "fuelCost": "Odhadované náklady na palivo",
+    "cost": "Náklady"
   },
   "rideLog": {
     "title": "Historie Jízd",
@@ -188,6 +198,7 @@
       "stops": "zastávky",
       "pickup": "Vyzvednout",
       "note": "Pozn",
+      "price": "Cena",
       "sortBy": "Seřadit podle {label}",
       "changeStatusFor": "Změnit status pro jízdu se zákazníkem {customerName}",
       "markSmsSentFor": "Označit SMS jako odeslanou pro jízdu se zákazníkem {customerName}",
@@ -353,6 +364,10 @@
   "vehicleType": {
     "CAR": "Osobák",
     "VAN": "Dodávka"
+  },
+  "fuelType": {
+    "DIESEL": "Nafta",
+    "PETROL": "Benzín"
   },
   "vehicleStatus": {
     "AVAILABLE": "Volné",

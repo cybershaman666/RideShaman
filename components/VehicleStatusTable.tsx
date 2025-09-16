@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import type { Vehicle, Person } from '../types';
-import { VehicleStatus, VehicleType } from '../types';
-import { CarIcon, EditIcon, PlusIcon, WrenchIcon, AlertTriangleIcon } from './icons';
+import type { Vehicle, Person, RideLog } from '../types';
+import { VehicleStatus, VehicleType, RideStatus } from '../types';
+import { CarIcon, EditIcon, PlusIcon, WrenchIcon, AlertTriangleIcon, FuelIcon } from './icons';
 import { Countdown } from './Countdown';
 import { useTranslation } from '../contexts/LanguageContext';
 
@@ -10,6 +10,7 @@ interface VehicleStatusTableProps {
   people: Person[];
   onEdit: (vehicle: Vehicle) => void;
   onAddVehicleClick: () => void;
+  rideLog: RideLog[];
 }
 
 type WarningLevel = 'info' | 'warning' | 'urgent';
@@ -33,11 +34,22 @@ const FilterSelect: React.FC<{
     </div>
 );
 
-export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles, people, onEdit, onAddVehicleClick }) => {
+export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles, people, onEdit, onAddVehicleClick, rideLog }) => {
   const { t } = useTranslation();
   const [typeFilter, setTypeFilter] = useState<'all' | VehicleType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | VehicleStatus>('all');
   const [hideInactive, setHideInactive] = useState(true);
+  
+  const vehicleTotalCosts = useMemo(() => {
+    const costs = new Map<number, number>();
+    rideLog.forEach(log => {
+      if (log.vehicleId && log.fuelCost && log.status === RideStatus.Completed) {
+        const currentCost = costs.get(log.vehicleId) || 0;
+        costs.set(log.vehicleId, currentCost + log.fuelCost);
+      }
+    });
+    return costs;
+  }, [rideLog]);
 
   const getStatusClass = (status: VehicleStatus) => {
     switch (status) {
@@ -184,6 +196,8 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                         return maxLevel;
                     }, 'info' as WarningLevel);
 
+                    const totalFuelCost = vehicleTotalCosts.get(vehicle.id);
+
 
                     return (
                     <tr key={vehicle.id} className="hover:bg-slate-700/50 transition-colors">
@@ -197,6 +211,12 @@ export const VehicleStatusTable: React.FC<VehicleStatusTableProps> = ({ vehicles
                             <div className="text-gray-400 text-xs">{driver?.name || <span className="italic text-gray-500">{t('general.unassigned')}</span>}</div>
                             {driver?.phone && <a href={`tel:${driver.phone}`} className="text-teal-400 text-xs font-mono hover:underline">{driver.phone}</a>}
                             <div className="mt-0.5 font-mono text-xs text-gray-500 bg-slate-700 px-1.5 py-0.5 rounded w-fit">{vehicle.licensePlate}</div>
+                            {totalFuelCost !== undefined && (
+                                <div className="mt-1 flex items-center space-x-1 text-xs text-red-400" title={t('vehicles.table.totalFuelCost')}>
+                                    <FuelIcon size={12} />
+                                    <span>{totalFuelCost.toFixed(0)} Kč</span>
+                                </div>
+                            )}
                         </div>
                         </div>
                     </td>

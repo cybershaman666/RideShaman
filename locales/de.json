@@ -28,6 +28,11 @@
       "title": "Kommunikation",
       "preferredApp": "Bevorzugte Nachrichten-App"
     },
+    "fuel": {
+        "title": "Kraftstoffpreise",
+        "diesel": "Dieselpreis",
+        "petrol": "Benzinpreis"
+    },
     "visibility": {
       "title": "Widget-Sichtbarkeit",
       "dispatch": "Dispositionsformular",
@@ -105,7 +110,8 @@
       "status": "Status",
       "location": "Standort",
       "warnings": "Warnungen",
-      "actions": "Aktionen"
+      "actions": "Aktionen",
+      "totalFuelCost": "Gesamte Kraftstoffkosten aus protokollierten Fahrten"
     },
     "add": {
       "title": "Neues Fahrzeug hinzufügen",
@@ -137,7 +143,9 @@
       "lastServiceMileage": "Letzter Service bei (km)",
       "inspectionExpiry": "TÜV gültig bis",
       "vignetteExpiry": "Vignette gültig bis",
-      "notes": "Fahrzeugnotizen"
+      "notes": "Fahrzeugnotizen",
+      "fuelType": "Kraftstoffart",
+      "fuelConsumption": "Verbrauch (L/100km)"
     },
     "warnings": {
       "serviceOverdue": "Service um {km} km überfällig.",
@@ -165,7 +173,9 @@
     "openNavigation": "Navigation öffnen",
     "noDriverAssigned": "Diesem Fahrzeug ist kein Fahrer zugewiesen",
     "copyText": "Text kopieren",
-    "optimizedRoute": "Optimierte Route"
+    "optimizedRoute": "Optimierte Route",
+    "fuelCost": "Geschätzte Kraftstoffkosten",
+    "cost": "Kosten"
   },
   "rideLog": {
     "title": "Fahrtenbuch",
@@ -188,6 +198,7 @@
       "stops": "Stopps",
       "pickup": "Abholung",
       "note": "Notiz",
+      "price": "Preis",
       "sortBy": "Sortieren nach {label}",
       "changeStatusFor": "Status für Fahrt mit Kunde {customerName} ändern",
       "markSmsSentFor": "SMS für Fahrt mit Kunde {customerName} als gesendet markieren",
@@ -353,6 +364,10 @@
   "vehicleType": {
     "CAR": "PKW",
     "VAN": "Transporter"
+  },
+  "fuelType": {
+    "DIESEL": "Diesel",
+    "PETROL": "Benzin"
   },
   "vehicleStatus": {
     "AVAILABLE": "Verfügbar",

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Vehicle } from '../types';
-import { VehicleStatus, VehicleType } from '../types';
+import { VehicleStatus, VehicleType, FuelType } from '../types';
 import { CloseIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
 
@@ -22,6 +22,8 @@ const initialVehicleState: Omit<Vehicle, 'id' | 'freeAt' | 'driverId'> = {
   technicalInspectionExpiry: '',
   vignetteExpiry: '',
   vehicleNotes: '',
+  fuelType: FuelType.Diesel,
+  fuelConsumption: 0,
 };
 
 export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClose }) => {
@@ -32,7 +34,7 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: ['capacity', 'mileage', 'serviceInterval', 'lastServiceMileage'].includes(name) ? parseInt(value, 10) || 0 : value,
+      [name]: ['capacity', 'mileage', 'serviceInterval', 'lastServiceMileage', 'fuelConsumption'].includes(name) ? parseFloat(value) || 0 : value,
     }));
   };
 
@@ -143,6 +145,18 @@ export const AddVehicleModal: React.FC<AddVehicleModalProps> = ({ onSave, onClos
                   required
                   className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="fuelType" className="block text-sm font-medium text-gray-300 mb-1">{t('vehicles.fields.fuelType')}</label>
+                <select id="fuelType" name="fuelType" value={formData.fuelType} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                  {Object.values(FuelType).map(type => (<option key={type} value={type}>{t(`fuelType.${type}`)}</option>))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="fuelConsumption" className="block text-sm font-medium text-gray-300 mb-1">{t('vehicles.fields.fuelConsumption')}</label>
+                <input type="number" step="0.1" id="fuelConsumption" name="fuelConsumption" value={formData.fuelConsumption || ''} onChange={handleChange} className="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500" />
               </div>
             </div>
             <div className="border-t border-slate-700 pt-4 mt-4">

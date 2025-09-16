@@ -203,3 +203,13 @@ export const NavigationIcon: React.FC<IconProps> = ({ className, size = 20 }) =>
         <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
     </svg>
 );
+
+export const FuelIcon: React.FC<IconProps> = ({ className, size=24 }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <line x1="3" y1="22" x2="15" y2="22"></line>
+        <line x1="4" y1="9" x2="4" y2="22"></line>
+        <line x1="12" y1="9" x2="12" y2="22"></line>
+        <path d="M15 9.3V6.7C15 6 14.3 5 13.5 5H6.5C5.7 5 5 6 5 6.7V10"></path>
+        <path d="M14 9L11.8 4.6c-.2-.4-.6-.6-1-.6H8.2c-.4 0-.8.2-1 .6L5 9"></path>
+    </svg>
+);

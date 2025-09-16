@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { DispatchFormComponent } from './components/DispatchForm';
 import { VehicleStatusTable } from './components/VehicleStatusTable';
 import { AssignmentResult } from './components/AssignmentResult';
-import { Vehicle, RideRequest, AssignmentResultData, VehicleStatus, VehicleType, ErrorResult, RideLog, RideStatus, LayoutConfig, LayoutItem, Notification, Person, PersonRole, WidgetId, Tariff, FlatRateRule, AssignmentAlternative, MessagingApp } from './types';
+import { Vehicle, RideRequest, AssignmentResultData, VehicleStatus, VehicleType, ErrorResult, RideLog, RideStatus, LayoutConfig, LayoutItem, Notification, Person, PersonRole, WidgetId, Tariff, FlatRateRule, AssignmentAlternative, MessagingApp, FuelType, FuelPrices } from './types';
 import { findBestVehicle, generateSms, generateNavigationUrl, geocodeAddress, shortenUrl } from './services/dispatchService';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ShamanIcon, SettingsIcon, PhoneIcon, PriceTagIcon, BarChartIcon } from './components/icons';
@@ -42,16 +42,16 @@ const initialPeople: Person[] = [
 
 // Initial mock data for vehicles, now referencing people by ID and including new service fields
 const initialVehicles: Vehicle[] = [
-  { id: 1, name: 'Škoda Superb #1', driverId: 1, licensePlate: '3J2 1234', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Náměstí, Mikulov', capacity: 4, mileage: 150000, serviceInterval: 30000, lastServiceMileage: 145000, technicalInspectionExpiry: '2025-08-15', vignetteExpiry: '2025-01-31' },
-  { id: 2, name: 'VW Passat #2', driverId: 2, licensePlate: '5B8 4567', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Dukelské náměstí, Hustopeče', capacity: 4, mileage: 89000, serviceInterval: 30000, lastServiceMileage: 85000, technicalInspectionExpiry: '2024-11-20', vignetteExpiry: '2025-01-31' },
-  { id: 3, name: 'Toyota Camry #3', driverId: 3, licensePlate: '1AX 8910', type: VehicleType.Car, status: VehicleStatus.Busy, location: 'Svatý kopeček, Mikulov', capacity: 4, freeAt: Date.now() + 15 * 60 * 1000, mileage: 45000, serviceInterval: 15000, lastServiceMileage: 40000, technicalInspectionExpiry: '2026-03-10', vignetteExpiry: '2025-01-31' },
-  { id: 4, name: 'Ford Transit VAN', driverId: 4, licensePlate: '8E1 1121', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Herbenova, Hustopeče', capacity: 8, mileage: 210000, serviceInterval: 40000, lastServiceMileage: 205000, technicalInspectionExpiry: '2025-05-01', vignetteExpiry: '2025-01-31' },
-  { id: 5, name: 'Škoda Octavia #4', driverId: 5, licensePlate: '2CD 5678', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Brněnská, Hustopeče', capacity: 4, mileage: 119500, serviceInterval: 30000, lastServiceMileage: 90000, technicalInspectionExpiry: '2024-09-30', vignetteExpiry: '2025-01-31' },
-  { id: 6, name: 'Hyundai i30 #5', driverId: 6, licensePlate: '3EF 9012', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Nádražní, Mikulov', capacity: 4, mileage: 62000, serviceInterval: 20000, lastServiceMileage: 60000, technicalInspectionExpiry: '2025-10-01', vignetteExpiry: '2025-01-31' },
-  { id: 7, name: 'Renault Trafic VAN', driverId: 7, licensePlate: '4GH 3456', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Pavlov', capacity: 8, mileage: 135000, serviceInterval: 40000, lastServiceMileage: 120000, technicalInspectionExpiry: '2025-02-28', vignetteExpiry: '2025-01-31' },
-  { id: 8, name: 'VW Caddy #6', driverId: 8, licensePlate: '5IJ 7890', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Zaječí', capacity: 4, mileage: 95000, serviceInterval: 30000, lastServiceMileage: 90000, technicalInspectionExpiry: '2025-07-15', vignetteExpiry: '2025-01-31' },
-  { id: 9, name: 'Mercedes-Benz Vito', driverId: 9, licensePlate: '6KL 1234', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Klentnice', capacity: 8, mileage: 180000, serviceInterval: 50000, lastServiceMileage: 175000, technicalInspectionExpiry: '2026-01-10', vignetteExpiry: '2025-01-31' },
-  { id: 10, name: 'Škoda Fabia #7', driverId: 10, licensePlate: '7MN 5678', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Sedlec', capacity: 4, mileage: 78000, serviceInterval: 30000, lastServiceMileage: 70000, technicalInspectionExpiry: '2025-12-01', vignetteExpiry: '2025-01-31' },
+  { id: 1, name: 'Škoda Superb #1', driverId: 1, licensePlate: '3J2 1234', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Náměstí, Mikulov', capacity: 4, mileage: 150000, serviceInterval: 30000, lastServiceMileage: 145000, technicalInspectionExpiry: '2025-08-15', vignetteExpiry: '2025-01-31', fuelType: FuelType.Diesel, fuelConsumption: 6.5 },
+  { id: 2, name: 'VW Passat #2', driverId: 2, licensePlate: '5B8 4567', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Dukelské náměstí, Hustopeče', capacity: 4, mileage: 89000, serviceInterval: 30000, lastServiceMileage: 85000, technicalInspectionExpiry: '2024-11-20', vignetteExpiry: '2025-01-31', fuelType: FuelType.Diesel, fuelConsumption: 7.1 },
+  { id: 3, name: 'Toyota Camry #3', driverId: 3, licensePlate: '1AX 8910', type: VehicleType.Car, status: VehicleStatus.Busy, location: 'Svatý kopeček, Mikulov', capacity: 4, freeAt: Date.now() + 15 * 60 * 1000, mileage: 45000, serviceInterval: 15000, lastServiceMileage: 40000, technicalInspectionExpiry: '2026-03-10', vignetteExpiry: '2025-01-31', fuelType: FuelType.Petrol, fuelConsumption: 8.5 },
+  { id: 4, name: 'Ford Transit VAN', driverId: 4, licensePlate: '8E1 1121', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Herbenova, Hustopeče', capacity: 8, mileage: 210000, serviceInterval: 40000, lastServiceMileage: 205000, technicalInspectionExpiry: '2025-05-01', vignetteExpiry: '2025-01-31', fuelType: FuelType.Diesel, fuelConsumption: 9.2 },
+  { id: 5, name: 'Škoda Octavia #4', driverId: 5, licensePlate: '2CD 5678', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Brněnská, Hustopeče', capacity: 4, mileage: 119500, serviceInterval: 30000, lastServiceMileage: 90000, technicalInspectionExpiry: '2024-09-30', vignetteExpiry: '2025-01-31', fuelType: FuelType.Diesel, fuelConsumption: 5.8 },
+  { id: 6, name: 'Hyundai i30 #5', driverId: 6, licensePlate: '3EF 9012', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Nádražní, Mikulov', capacity: 4, mileage: 62000, serviceInterval: 20000, lastServiceMileage: 60000, technicalInspectionExpiry: '2025-10-01', vignetteExpiry: '2025-01-31', fuelType: FuelType.Petrol, fuelConsumption: 7.5 },
+  { id: 7, name: 'Renault Trafic VAN', driverId: 7, licensePlate: '4GH 3456', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Pavlov', capacity: 8, mileage: 135000, serviceInterval: 40000, lastServiceMileage: 120000, technicalInspectionExpiry: '2025-02-28', vignetteExpiry: '2025-01-31', fuelType: FuelType.Diesel, fuelConsumption: 8.8 },
+  { id: 8, name: 'VW Caddy #6', driverId: 8, licensePlate: '5IJ 7890', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Zaječí', capacity: 4, mileage: 95000, serviceInterval: 30000, lastServiceMileage: 90000, technicalInspectionExpiry: '2025-07-15', vignetteExpiry: '2025-01-31', fuelType: FuelType.Diesel, fuelConsumption: 6.2 },
+  { id: 9, name: 'Mercedes-Benz Vito', driverId: 9, licensePlate: '6KL 1234', type: VehicleType.Van, status: VehicleStatus.Available, location: 'Klentnice', capacity: 8, mileage: 180000, serviceInterval: 50000, lastServiceMileage: 175000, technicalInspectionExpiry: '2026-01-10', vignetteExpiry: '2025-01-31', fuelType: FuelType.Diesel, fuelConsumption: 9.5 },
+  { id: 10, name: 'Škoda Fabia #7', driverId: 10, licensePlate: '7MN 5678', type: VehicleType.Car, status: VehicleStatus.Available, location: 'Sedlec', capacity: 4, mileage: 78000, serviceInterval: 30000, lastServiceMileage: 70000, technicalInspectionExpiry: '2025-12-01', vignetteExpiry: '2025-01-31', fuelType: FuelType.Petrol, fuelConsumption: 6.8 },
 ];
 
 
@@ -81,6 +81,11 @@ export const DEFAULT_TARIFF: Tariff = {
     { id: 2, name: "V rámci Mikulova", priceCar: 100, priceVan: 150 },
     { id: 3, name: "Zaječí - diskotéka Retro", priceCar: 200, priceVan: 300 },
   ],
+};
+
+export const DEFAULT_FUEL_PRICES: FuelPrices = {
+  DIESEL: 37.5,
+  PETROL: 38.9,
 };
 
 
@@ -178,6 +183,15 @@ const App: React.FC = () => {
         return DEFAULT_TARIFF;
     }
   });
+  
+  const [fuelPrices, setFuelPrices] = useState<FuelPrices>(() => {
+    try {
+        const saved = localStorage.getItem('rapid-dispatch-fuel-prices');
+        return saved ? JSON.parse(saved) : DEFAULT_FUEL_PRICES;
+    } catch {
+        return DEFAULT_FUEL_PRICES;
+    }
+  });
 
   const [assignmentResult, setAssignmentResult] = useState<AssignmentResultData | null>(null);
   const [error, setError] = useState<ErrorResult | null>(null);
@@ -264,6 +278,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('rapid-dispatch-tariff', JSON.stringify(tariff));
   }, [tariff]);
+  
+  useEffect(() => {
+    localStorage.setItem('rapid-dispatch-fuel-prices', JSON.stringify(fuelPrices));
+  }, [fuelPrices]);
 
   useEffect(() => {
     localStorage.setItem('rapid-dispatch-widget-visibility', JSON.stringify(widgetVisibility));
@@ -403,6 +421,15 @@ const App: React.FC = () => {
   const getDriverName = (driverId: number | null) => {
     return people.find(p => p.id === driverId)?.name || t('general.unassigned');
   };
+  
+  const calculateFuelCost = useCallback((vehicle: Vehicle, distanceKm: number): number | undefined => {
+    if (vehicle.fuelType && vehicle.fuelConsumption && vehicle.fuelConsumption > 0) {
+      const price = fuelPrices[vehicle.fuelType];
+      const cost = (distanceKm / 100) * vehicle.fuelConsumption * price;
+      return Math.round(cost);
+    }
+    return undefined;
+  }, [fuelPrices]);
 
   const handleConfirmAssignment = useCallback(async (option: AssignmentAlternative) => {
     const { rideRequest, rideDuration, optimizedStops } = assignmentResult!;
@@ -434,6 +461,7 @@ const App: React.FC = () => {
     const alternative = assignmentResult!.alternatives.find(a => a.vehicle.id === chosenVehicle.id) || assignmentResult;
     const durationInMinutes = rideDuration ? alternative.eta + rideDuration : alternative.eta + 30;
     const freeAt = Date.now() + durationInMinutes * 60 * 1000;
+    const fuelCost = assignmentResult?.rideDistance ? calculateFuelCost(chosenVehicle, assignmentResult.rideDistance) : undefined;
     
     setVehicles(prev => prev.map(v => v.id === chosenVehicle.id ? { ...v, status: VehicleStatus.Busy, freeAt, location: destination } : v));
 
@@ -456,11 +484,12 @@ const App: React.FC = () => {
       estimatedPrice: alternative.estimatedPrice,
       estimatedPickupTimestamp: Date.now() + alternative.eta * 60 * 1000,
       estimatedCompletionTimestamp: Date.now() + durationInMinutes * 60 * 1000,
+      fuelCost: fuelCost,
     };
 
     setRideLog(prev => [newLog, ...prev]);
     setAssignmentResult(null);
-  }, [assignmentResult, isAiEnabled, people, t, language]);
+  }, [assignmentResult, isAiEnabled, people, t, language, calculateFuelCost]);
   
   const handleManualAssignmentConfirm = (durationInMinutes: number) => {
       if (!manualAssignmentDetails) return;
@@ -472,6 +501,9 @@ const App: React.FC = () => {
       const eta = alternative?.eta ?? 0;
       const totalBusyTime = eta + durationInMinutes;
       const freeAt = Date.now() + totalBusyTime * 60 * 1000;
+      const rideDistance = assignmentResult?.rideDistance;
+      const fuelCost = rideDistance ? calculateFuelCost(vehicle, rideDistance) : undefined;
+
 
       setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: VehicleStatus.Busy, freeAt, location: destination } : v));
 
@@ -494,6 +526,7 @@ const App: React.FC = () => {
         estimatedPrice: estimatedPrice,
         estimatedPickupTimestamp: Date.now() + (eta * 60 * 1000),
         estimatedCompletionTimestamp: Date.now() + totalBusyTime * 60 * 1000,
+        fuelCost: fuelCost,
       };
       
       setRideLog(prev => [newLog, ...prev]);
@@ -622,7 +655,7 @@ const App: React.FC = () => {
   };
 
   const handleSaveData = () => {
-    const dataToSave = { vehicles, rideLog, people, tariff, messagingApp };
+    const dataToSave = { vehicles, rideLog, people, tariff, messagingApp, fuelPrices };
     const jsonString = JSON.stringify(dataToSave, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -714,6 +747,9 @@ const App: React.FC = () => {
                 if (parsedData.messagingApp) {
                     setMessagingApp(parsedData.messagingApp);
                 }
+                if (parsedData.fuelPrices) {
+                    setFuelPrices(parsedData.fuelPrices);
+                }
                 alert(t('notifications.dataLoadedSuccess'));
             } else {
                 throw new Error("Invalid data structure in JSON file.");
@@ -763,7 +799,7 @@ const App: React.FC = () => {
 
   const widgetMap: Record<WidgetId, React.ReactNode> = {
     dispatch: <DispatchFormComponent onSubmit={handleSubmitDispatch} onSchedule={handleScheduleRide} isLoading={isLoading} rideHistory={rideLog} cooldownTime={cooldown} onRoutePreview={handleRoutePreview} />,
-    vehicles: <VehicleStatusTable vehicles={vehicles} people={people} onEdit={setEditingVehicle} onAddVehicleClick={() => setIsAddingVehicle(true)} />,
+    vehicles: <VehicleStatusTable vehicles={vehicles} people={people} onEdit={setEditingVehicle} onAddVehicleClick={() => setIsAddingVehicle(true)} rideLog={rideLog} />,
     map: <OpenStreetMap vehicles={vehicles} people={people} routeToPreview={routeToPreview} confirmedAssignment={assignmentResult} />,
     rideLog: <RideLogTable logs={sortedRideLog} vehicles={vehicles} people={people} messagingApp={messagingApp} onSort={handleSort} sortConfig={sortConfig} onToggleSmsSent={handleToggleSmsSent} onEdit={setEditingRideLog} onStatusChange={handleRideStatusChange} onDelete={handleDeleteRideLog} showCompleted={showCompletedRides} onToggleShowCompleted={() => setShowCompletedRides(prev => !prev)} />,
   };
@@ -799,8 +835,8 @@ const App: React.FC = () => {
       {(isLoading || assignmentResult || error) && (
            <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start pt-24 p-4 animate-fade-in overflow-y-auto">
               {isLoading && !assignmentResult && <LoadingSpinner text={t('loading.calculating')} />}
-              {assignmentResult && (<AssignmentResult result={assignmentResult} error={error} onClear={handleClearResult} onConfirm={handleConfirmAssignment} isAiMode={isAiEnabled} people={people} messagingApp={messagingApp} className="max-w-4xl w-full"/>)}
-              {error && !assignmentResult && (<AssignmentResult result={null} error={error} onClear={handleClearResult} onConfirm={() => {}} isAiMode={isAiEnabled} people={people} messagingApp={messagingApp} className="max-w-xl w-full"/>)}
+              {assignmentResult && (<AssignmentResult result={assignmentResult} error={error} onClear={handleClearResult} onConfirm={handleConfirmAssignment} isAiMode={isAiEnabled} people={people} messagingApp={messagingApp} className="max-w-4xl w-full" fuelPrices={fuelPrices} />)}
+              {error && !assignmentResult && (<AssignmentResult result={null} error={error} onClear={handleClearResult} onConfirm={() => {}} isAiMode={isAiEnabled} people={people} messagingApp={messagingApp} className="max-w-xl w-full" fuelPrices={fuelPrices}/>)}
            </div>
       )}
 
@@ -830,6 +866,8 @@ const App: React.FC = () => {
           onClearRideHistory={handleClearRideHistory}
           widgetVisibility={widgetVisibility}
           onWidgetVisibilityChange={handleWidgetVisibilityChange}
+          fuelPrices={fuelPrices}
+          onFuelPricesChange={setFuelPrices}
         />
       )}
       

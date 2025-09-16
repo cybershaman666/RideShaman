@@ -28,6 +28,11 @@
       "title": "Communication",
       "preferredApp": "Preferred Messaging App"
     },
+    "fuel": {
+      "title": "Fuel Prices",
+      "diesel": "Diesel Price",
+      "petrol": "Petrol Price"
+    },
     "visibility": {
       "title": "Widget Visibility",
       "dispatch": "Dispatch Form",
@@ -105,7 +110,8 @@
       "status": "Status",
       "location": "Location",
       "warnings": "Warnings",
-      "actions": "Actions"
+      "actions": "Actions",
+      "totalFuelCost": "Total fuel cost from logged rides"
     },
     "add": {
       "title": "Add New Vehicle",
@@ -137,7 +143,9 @@
       "lastServiceMileage": "Last Service at (km)",
       "inspectionExpiry": "Technical Inspection Expiry",
       "vignetteExpiry": "Vignette Expiry",
-      "notes": "Vehicle Notes"
+      "notes": "Vehicle Notes",
+      "fuelType": "Fuel Type",
+      "fuelConsumption": "Consumption (L/100km)"
     },
     "warnings": {
       "serviceOverdue": "Service overdue by {km} km.",
@@ -165,7 +173,9 @@
     "openNavigation": "Open Navigation",
     "noDriverAssigned": "No driver assigned to this vehicle",
     "copyText": "Copy text",
-    "optimizedRoute": "Optimized Route"
+    "optimizedRoute": "Optimized Route",
+    "fuelCost": "Estimated fuel cost",
+    "cost": "Cost"
   },
   "rideLog": {
     "title": "Ride History",
@@ -188,6 +198,7 @@
       "stops": "stops",
       "pickup": "Pickup",
       "note": "Note",
+      "price": "Price",
       "sortBy": "Sort by {label}",
       "changeStatusFor": "Change status for ride with customer {customerName}",
       "markSmsSentFor": "Mark SMS as sent for ride with customer {customerName}",
@@ -353,6 +364,10 @@
   "vehicleType": {
     "CAR": "Car",
     "VAN": "Van"
+  },
+  "fuelType": {
+    "DIESEL": "Diesel",
+    "PETROL": "Petrol"
   },
   "vehicleStatus": {
     "AVAILABLE": "Available",

@@ -29,6 +29,11 @@ export enum MessagingApp {
   WhatsApp = 'WhatsApp',
 }
 
+export enum FuelType {
+  Diesel = 'DIESEL',
+  Petrol = 'PETROL',
+}
+
 export interface Person {
   id: number;
   name: string;
@@ -54,6 +59,8 @@ export interface Vehicle {
   technicalInspectionExpiry?: string; // YYYY-MM-DD
   vignetteExpiry?: string; // YYYY-MM-DD
   vehicleNotes?: string;
+  fuelType?: FuelType;
+  fuelConsumption?: number; // L/100km
 }
 
 export interface RideRequest {
@@ -113,6 +120,7 @@ export interface RideLog {
   // Timestamps for tracking and notifications
   estimatedPickupTimestamp?: number;
   estimatedCompletionTimestamp?: number;
+  fuelCost?: number;
 }
 
 // Types for customizable layout
@@ -152,4 +160,9 @@ export interface Tariff {
   pricePerKmCar: number;
   pricePerKmVan: number;
   flatRates: FlatRateRule[];
+}
+
+export interface FuelPrices {
+  DIESEL: number;
+  PETROL: number;
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { CloseIcon, UploadIcon, DownloadIcon, CsvIcon, UndoIcon, TrashIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
 import { AiToggle } from './AiToggle';
-import type { WidgetId, MessagingApp } from '../types';
+import type { WidgetId, MessagingApp, FuelPrices } from '../types';
 import { MessagingApp as AppType } from '../types';
 
 interface SettingsModalProps {
@@ -21,6 +21,8 @@ interface SettingsModalProps {
   onClearRideHistory: () => void;
   widgetVisibility: Record<WidgetId, boolean>;
   onWidgetVisibilityChange: (widgetId: WidgetId, isVisible: boolean) => void;
+  fuelPrices: FuelPrices;
+  onFuelPricesChange: (prices: FuelPrices) => void;
 }
 
 const VisibilityToggle: React.FC<{
@@ -45,13 +47,20 @@ const VisibilityToggle: React.FC<{
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen, onClose, isAiEnabled, onToggleAi, messagingApp, onMessagingAppChange,
   isEditMode, onToggleEditMode, onResetLayout, onSaveData, onLoadData, onExportCsv, onClearRideHistory,
-  widgetVisibility, onWidgetVisibilityChange
+  widgetVisibility, onWidgetVisibilityChange, fuelPrices, onFuelPricesChange
 }) => {
   const { t, language, changeLanguage } = useTranslation();
 
   if (!isOpen) return null;
   
   const widgetIds: WidgetId[] = ['dispatch', 'vehicles', 'map', 'rideLog'];
+
+  const handleFuelPriceChange = (fuelType: keyof FuelPrices, value: string) => {
+    onFuelPricesChange({
+      ...fuelPrices,
+      [fuelType]: parseFloat(value) || 0,
+    });
+  };
 
   return (
     <div
@@ -109,6 +118,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <option key={app} value={app}>{app}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+          </section>
+
+          {/* Fuel Price Settings */}
+          <section>
+            <h3 className="text-lg font-medium text-amber-400 mb-4">{t('settings.fuel.title')}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-slate-700/50 p-3 rounded-lg">
+                <label htmlFor="diesel-price" className="block text-sm font-medium text-gray-300 mb-1">{t('settings.fuel.diesel')}</label>
+                <div className="relative">
+                  <input type="number" step="0.1" id="diesel-price" value={fuelPrices.DIESEL} onChange={(e) => handleFuelPriceChange('DIESEL', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-md py-1 pl-3 pr-12 text-white" />
+                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">Kč/L</span>
+                </div>
+              </div>
+              <div className="bg-slate-700/50 p-3 rounded-lg">
+                <label htmlFor="petrol-price" className="block text-sm font-medium text-gray-300 mb-1">{t('settings.fuel.petrol')}</label>
+                <div className="relative">
+                  <input type="number" step="0.1" id="petrol-price" value={fuelPrices.PETROL} onChange={(e) => handleFuelPriceChange('PETROL', e.target.value)} className="w-full bg-slate-700 border border-slate-600 rounded-md py-1 pl-3 pr-12 text-white" />
+                  <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400">Kč/L</span>
+                </div>
               </div>
             </div>
           </section>
