@@ -3,7 +3,7 @@ import { DispatchFormComponent } from './components/DispatchForm';
 import { VehicleStatusTable } from './components/VehicleStatusTable';
 import { AssignmentResult } from './components/AssignmentResult';
 import { Vehicle, RideRequest, AssignmentResultData, VehicleStatus, VehicleType, ErrorResult, RideLog, RideStatus, LayoutConfig, LayoutItem, Notification, Person, PersonRole, WidgetId, Tariff, FlatRateRule, AssignmentAlternative, MessagingApp } from './types';
-import { findBestVehicle, generateSms, generateNavigationUrl } from './services/dispatchService';
+import { findBestVehicle, generateSms, generateNavigationUrl, geocodeAddress, shortenUrl } from './services/dispatchService';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ShamanIcon, SettingsIcon, PhoneIcon, PriceTagIcon, BarChartIcon } from './components/icons';
 import { EditVehicleModal } from './components/EditVehicleModal';
@@ -185,8 +185,8 @@ const App: React.FC = () => {
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [isAddingVehicle, setIsAddingVehicle] = useState(false);
   const [editingRideLog, setEditingRideLog] = useState<RideLog | null>(null);
-  const [manualAssignmentDetails, setManualAssignmentDetails] = useState<{rideRequest: RideRequest, vehicle: Vehicle, rideDuration: number, sms: string, estimatedPrice: number} | null>(null);
-  const [smsToPreview, setSmsToPreview] = useState<{ sms: string; driverPhone?: string; vehicleLocation?: string; stops?: string[]; } | null>(null);
+  const [manualAssignmentDetails, setManualAssignmentDetails] = useState<{rideRequest: RideRequest, vehicle: Vehicle, rideDuration: number, sms: string, estimatedPrice: number, navigationUrl: string} | null>(null);
+  const [smsToPreview, setSmsToPreview] = useState<{ sms: string; driverPhone?: string; navigationUrl: string; } | null>(null);
 
 
   const [isAiEnabled, setIsAiEnabled] = useState<boolean>(() => {
@@ -404,21 +404,30 @@ const App: React.FC = () => {
     return people.find(p => p.id === driverId)?.name || t('general.unassigned');
   };
 
-  const handleConfirmAssignment = useCallback((option: AssignmentAlternative) => {
+  const handleConfirmAssignment = useCallback(async (option: AssignmentAlternative) => {
     const { rideRequest, rideDuration, optimizedStops } = assignmentResult!;
     const chosenVehicle = option.vehicle;
     const finalStops = optimizedStops || rideRequest.stops;
     const destination = finalStops[finalStops.length - 1];
     
     if (!isAiEnabled) {
-        const navigationUrl = generateNavigationUrl(chosenVehicle.location, finalStops);
-        setManualAssignmentDetails({ 
-            rideRequest: assignmentResult!.rideRequest, 
-            vehicle: chosenVehicle,
-            rideDuration: rideDuration || 30,
-            sms: generateSms({ ...assignmentResult!.rideRequest, stops: finalStops }, t, navigationUrl),
-            estimatedPrice: option.estimatedPrice
-        });
+        try {
+            const vehicleLocationCoords = await geocodeAddress(chosenVehicle.location, language);
+            const stopCoords = await Promise.all(finalStops.map(s => geocodeAddress(s, language)));
+            const longNavigationUrl = generateNavigationUrl(vehicleLocationCoords, stopCoords);
+            const navigationUrl = await shortenUrl(longNavigationUrl);
+
+            setManualAssignmentDetails({ 
+                rideRequest: assignmentResult!.rideRequest, 
+                vehicle: chosenVehicle,
+                rideDuration: rideDuration || 30,
+                sms: generateSms({ ...assignmentResult!.rideRequest, stops: finalStops }, t, navigationUrl),
+                estimatedPrice: option.estimatedPrice,
+                navigationUrl: navigationUrl,
+            });
+        } catch (err: any) {
+            setError({ messageKey: "error.geocodingFailed", message: err.message });
+        }
         return;
     }
     
@@ -451,7 +460,7 @@ const App: React.FC = () => {
 
     setRideLog(prev => [newLog, ...prev]);
     setAssignmentResult(null);
-  }, [assignmentResult, isAiEnabled, people, t]);
+  }, [assignmentResult, isAiEnabled, people, t, language]);
   
   const handleManualAssignmentConfirm = (durationInMinutes: number) => {
       if (!manualAssignmentDetails) return;
@@ -542,7 +551,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleUpdateRideLog = (updatedLog: RideLog) => {
+  const handleUpdateRideLog = async (updatedLog: RideLog) => {
     const originalLog = rideLog.find(log => log.id === updatedLog.id);
     setRideLog(prev => prev.map(log => log.id === updatedLog.id ? updatedLog : log));
 
@@ -557,14 +566,26 @@ const App: React.FC = () => {
     // Show SMS preview if a scheduled ride is dispatched
     if (originalLog && originalLog.status === RideStatus.Scheduled && updatedLog.status === RideStatus.OnTheWay && updatedLog.vehicleId) {
         const assignedVehicle = vehicles.find(v => v.id === updatedLog.vehicleId);
-        const navigationUrl = assignedVehicle ? generateNavigationUrl(assignedVehicle.location, updatedLog.stops) : undefined;
+        let navigationUrl = 'https://maps.google.com';
+        try {
+            if (assignedVehicle) {
+                const vehicleCoords = await geocodeAddress(assignedVehicle.location, language);
+                const stopCoords = await Promise.all(updatedLog.stops.map(s => geocodeAddress(s, language)));
+                const longNavigationUrl = generateNavigationUrl(vehicleCoords, stopCoords);
+                navigationUrl = await shortenUrl(longNavigationUrl);
+            }
+        } catch (err: any) {
+            console.error("Could not generate nav url for scheduled ride dispatch", err);
+            setError({ messageKey: "error.geocodingFailed", message: err.message });
+        }
+        
         const smsText = generateSms(updatedLog, t, navigationUrl);
         const driver = people.find(p => p.id === assignedVehicle?.driverId);
+
         setSmsToPreview({ 
             sms: smsText, 
             driverPhone: driver?.phone,
-            vehicleLocation: assignedVehicle?.location,
-            stops: updatedLog.stops,
+            navigationUrl: navigationUrl,
         });
     }
 

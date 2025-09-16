@@ -2,24 +2,22 @@ import React, { useState } from 'react';
 import { CloseIcon, ClipboardIcon, CheckCircleIcon, ShareIcon, NavigationIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
 import type { MessagingApp } from '../types';
-import { generateShareLink, generateNavigationUrl } from '../services/dispatchService';
+import { generateShareLink } from '../services/dispatchService';
 
 interface SmsPreviewModalProps {
   sms: string;
   driverPhone?: string;
-  vehicleLocation?: string;
-  stops?: string[];
+  navigationUrl: string;
   messagingApp: MessagingApp;
   onClose: () => void;
 }
 
-export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPhone, vehicleLocation, stops, messagingApp, onClose }) => {
+export const SmsPreviewModal: React.FC<SmsPreviewModalProps> = ({ sms, driverPhone, navigationUrl, messagingApp, onClose }) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const cleanDriverPhone = driverPhone?.replace(/\s/g, '');
   
   const shareLink = generateShareLink(messagingApp, cleanDriverPhone || '', sms);
-  const navigationUrl = generateNavigationUrl(vehicleLocation || '', stops || []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(sms).then(() => {

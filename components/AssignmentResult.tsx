@@ -72,10 +72,8 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   
-  const finalStops = result?.optimizedStops || result?.rideRequest.stops || [];
-  const vehicleLocation = result?.vehicle.location;
-  const navigationUrl = generateNavigationUrl(vehicleLocation || '', finalStops);
-  const smsText = result ? generateSms({ ...result.rideRequest, stops: finalStops }, t, navigationUrl) : '';
+  const smsText = result?.sms || '';
+  const navigationUrl = result?.navigationUrl || 'https://maps.google.com';
   const driver = result ? people.find(p => p.id === result.vehicle.driverId) : null;
   const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
   const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', smsText);
@@ -137,7 +135,7 @@ export const AssignmentResult: React.FC<AssignmentResultProps> = ({ result, erro
             <div className="bg-slate-700/50 p-4 rounded-lg">
                 <h3 className="text-md font-semibold text-amber-400 mb-2">{t('assignment.optimizedRoute')}</h3>
                 <ol className="list-decimal list-inside text-gray-200 space-y-1">
-                    {finalStops.map((stop, index) => (
+                    {optimizedStops.map((stop, index) => (
                         <li key={index}>
                             <span className={index === 0 ? 'font-bold' : ''}>{stop}</span>
                         </li>

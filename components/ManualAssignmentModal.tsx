@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { RideRequest, Vehicle, Person, MessagingApp } from '../types';
 import { CloseIcon, ClipboardIcon, CheckCircleIcon, ShareIcon, NavigationIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
-import { generateShareLink, generateNavigationUrl } from '../services/dispatchService';
+import { generateShareLink } from '../services/dispatchService';
 
 interface ManualAssignmentModalProps {
   details: {
@@ -10,6 +10,7 @@ interface ManualAssignmentModalProps {
     vehicle: Vehicle;
     rideDuration: number;
     sms: string;
+    navigationUrl: string;
   };
   people: Person[];
   messagingApp: MessagingApp;
@@ -19,14 +20,13 @@ interface ManualAssignmentModalProps {
 
 export const ManualAssignmentModal: React.FC<ManualAssignmentModalProps> = ({ details, people, messagingApp, onConfirm, onClose }) => {
   const { t } = useTranslation();
-  const { rideRequest, vehicle, rideDuration, sms } = details;
+  const { rideRequest, vehicle, rideDuration, sms, navigationUrl } = details;
   const [duration, setDuration] = useState(rideDuration);
   const [copied, setCopied] = useState(false);
   
   const driver = people.find(p => p.id === vehicle.driverId);
   const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
   const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', sms);
-  const navigationUrl = generateNavigationUrl(vehicle.location, rideRequest.stops);
 
   useEffect(() => {
     setDuration(rideDuration);

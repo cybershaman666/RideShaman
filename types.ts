@@ -83,6 +83,9 @@ export interface AssignmentResultData {
   alternatives: AssignmentAlternative[];
   rideRequest: RideRequest;
   optimizedStops?: string[]; // The reordered list of stops
+  vehicleLocationCoords: { lat: number; lon: number };
+  stopCoords: { lat: number; lon: number }[];
+  navigationUrl: string;
 }
 
 export interface ErrorResult {

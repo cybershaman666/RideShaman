@@ -31,6 +31,12 @@ type RouteSummary = { distance: string; duration: string };
 const geocodeCache = new Map<string, Coords>();
 const SOUTH_MORAVIA_VIEWBOX = '16.3,48.7,17.2,49.3'; // lon_min,lat_min,lon_max,lat_max
 
+const generateColorForVehicle = (vehicleId: number): string => {
+  const hue = (vehicleId * 137.5) % 360; // Use golden angle approximation for good distribution
+  return `hsl(${hue}, 85%, 60%)`;
+};
+
+
 async function geocodeAddress(address: string, lang: string): Promise<Coords> {
     const cacheKey = `${address}_${lang}`;
     if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey)!;
@@ -104,9 +110,30 @@ const VehicleMarker: React.FC<{ vehicle: Vehicle, people: Person[] }> = ({ vehic
             .then(setPosition)
             .catch(err => console.error(err));
     }, [vehicle.location, language]);
+    
+    const color = generateColorForVehicle(vehicle.id);
+    const driverFirstName = driver?.name ? driver.name.split(' ')[0] : '';
 
-    const iconHtml = `<div class="p-1 bg-slate-900/80 rounded-full backdrop-blur-sm"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${vehicle.type === VehicleType.Car ? 'text-amber-400' : 'text-gray-200'}"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/></svg></div>`;
-    const customIcon = new L.DivIcon({ html: iconHtml, className: 'vehicle-marker', iconSize: [40, 40], iconAnchor: [20, 20], popupAnchor: [0, -20] });
+
+    const iconHtml = `
+      <div class="custom-marker-content">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+          <circle cx="7" cy="17" r="2"/>
+          <circle cx="17" cy="17" r="2"/>
+          <path d="M9 17h6"/>
+        </svg>
+        ${driverFirstName ? `<span class="driver-name-label">${driverFirstName}</span>` : ''}
+      </div>
+    `;
+
+    const customIcon = new L.DivIcon({
+        html: iconHtml,
+        className: 'custom-vehicle-marker',
+        iconSize: [40, 50],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -20]
+    });
     
     if (!position) return null;
     return (

@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { RideLog, VehicleType, RideStatus, MessagingApp, Person, Vehicle } from '../types';
 import { CarIcon, ArrowUpIcon, ArrowDownIcon, EditIcon, TrashIcon, ShareIcon, NavigationIcon } from './icons';
 import { useTranslation } from '../contexts/LanguageContext';
-import { generateSms, generateShareLink, generateNavigationUrl } from '../services/dispatchService';
+import { generateSms, generateShareLink, generateNavigationUrl, geocodeAddress, shortenUrl } from '../services/dispatchService';
 
 interface RideLogTableProps {
   logs: RideLog[];
@@ -53,7 +53,8 @@ const SortableHeader: React.FC<{
 
 export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, vehicles, people, messagingApp, onSort, sortConfig, onToggleSmsSent, onEdit, onStatusChange, onDelete, showCompleted, onToggleShowCompleted }) => {
   const { t, language } = useTranslation();
-  
+  const [isGeneratingLink, setIsGeneratingLink] = useState<string | null>(null);
+
   const getStatusSelectClass = (status: RideStatus) => {
     const base = "w-full rounded-md border-0 py-1 pl-3 pr-8 text-xs font-medium focus:ring-2 focus:ring-inset focus:ring-amber-500 cursor-pointer transition-colors capitalize";
     switch (status) {
@@ -89,6 +90,36 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, vehicles, peop
       </div>
     );
   };
+
+  const handleDispatchAction = async (log: RideLog, action: 'navigate' | 'share') => {
+      const uniqueActionId = `${log.id}-${action}`;
+      setIsGeneratingLink(uniqueActionId);
+      try {
+          const vehicle = vehicles.find(v => v.id === log.vehicleId);
+          if (!vehicle) throw new Error("Vehicle not found for this log entry.");
+
+          const vehicleCoords = await geocodeAddress(vehicle.location, language);
+          const stopCoords = await Promise.all(log.stops.map(s => geocodeAddress(s, language)));
+          const longNavigationUrl = generateNavigationUrl(vehicleCoords, stopCoords);
+          const navigationUrl = await shortenUrl(longNavigationUrl);
+
+          if (action === 'navigate') {
+              window.open(navigationUrl, '_blank');
+          } else if (action === 'share') {
+              const driver = people.find(p => p.id === vehicle.driverId);
+              const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
+              const smsText = generateSms(log, t, navigationUrl);
+              const shareUrl = generateShareLink(messagingApp, driverPhoneNumber || '', smsText);
+              window.open(shareUrl, '_blank');
+          }
+      } catch (error) {
+          console.error(`Failed to perform dispatch action (${action}) for log ${log.id}:`, error);
+          alert((error as Error).message || 'Failed to generate link.');
+      } finally {
+          setIsGeneratingLink(null);
+      }
+  };
+
 
   return (
     <div className="bg-slate-800 p-2 rounded-lg shadow-2xl flex flex-col h-full">
@@ -140,10 +171,6 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, vehicles, peop
               {logs.map((log) => {
                 const vehicle = vehicles.find(v => v.id === log.vehicleId);
                 const driver = vehicle ? people.find(p => p.id === vehicle.driverId) : null;
-                const driverPhoneNumber = driver?.phone.replace(/\s/g, '');
-                const navigationUrl = generateNavigationUrl(vehicle?.location || '', log.stops);
-                const smsText = generateSms(log, t, navigationUrl);
-                const shareLink = generateShareLink(messagingApp, driverPhoneNumber || '', smsText);
                 
                 return (
                 <tr key={log.id} className={`${log.status === RideStatus.Scheduled ? 'bg-sky-900/50' : ''} hover:bg-slate-700/50`}>
@@ -200,26 +227,24 @@ export const RideLogTable: React.FC<RideLogTableProps> = ({ logs, vehicles, peop
                     />
                   </td>
                   <td className="whitespace-nowrap px-3 py-2 text-sm">
-                    {log.status === RideStatus.OnTheWay && driverPhoneNumber && (
+                    {log.status === RideStatus.OnTheWay && driver && (
                       <div className="flex items-center space-x-2">
-                         <a
-                            href={navigationUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors hover:bg-slate-600 hover:text-white"
+                         <button
+                            onClick={() => handleDispatchAction(log, 'navigate')}
+                            disabled={isGeneratingLink === `${log.id}-navigate`}
+                            className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors hover:bg-slate-600 hover:text-white disabled:opacity-50 disabled:animate-pulse"
                             title={t('assignment.openNavigation')}
                           >
                             <NavigationIcon size={18} />
-                          </a>
-                          <a
-                            href={shareLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors hover:bg-slate-600 hover:text-white"
+                          </button>
+                          <button
+                            onClick={() => handleDispatchAction(log, 'share')}
+                            disabled={isGeneratingLink === `${log.id}-share`}
+                            className="p-2 rounded-md bg-slate-700 text-gray-300 transition-colors hover:bg-slate-600 hover:text-white disabled:opacity-50 disabled:animate-pulse"
                             title={t('assignment.sendVia', { app: messagingApp })}
                           >
                             <ShareIcon size={18} />
-                          </a>
+                          </button>
                       </div>
                     )}
                   </td>

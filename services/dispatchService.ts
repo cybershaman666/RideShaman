@@ -8,6 +8,42 @@ if (!GEMINI_API_KEY) {
 }
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY! });
 
+const urlShortenCache = new Map<string, string>();
+
+/**
+ * Shortens a URL using the TinyURL API.
+ * Falls back to the original URL if the API call fails.
+ */
+export async function shortenUrl(longUrl: string): Promise<string> {
+    if (urlShortenCache.has(longUrl)) {
+        return urlShortenCache.get(longUrl)!;
+    }
+
+    if (longUrl === 'https://maps.google.com' || !longUrl.startsWith('http')) {
+        return longUrl;
+    }
+
+    try {
+        // Using a CORS proxy to bypass browser restrictions on calling the TinyURL API directly.
+        const proxyUrl = 'https://corsproxy.io/?';
+        const apiUrl = `${proxyUrl}https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`;
+        
+        const response = await fetch(apiUrl);
+        if (response.ok) {
+            const shortUrl = await response.text();
+            if (shortUrl.startsWith('http')) {
+                urlShortenCache.set(longUrl, shortUrl);
+                return shortUrl;
+            }
+        }
+        console.warn('TinyURL API call failed or returned invalid response, returning original URL.');
+        return longUrl;
+    } catch (error) {
+        console.error('Error shortening URL:', error);
+        return longUrl; // Fallback to the original URL on error
+    }
+}
+
 /**
  * Generates an SMS message for the driver in the selected language.
  */
@@ -60,18 +96,37 @@ export function generateShareLink(app: AppType, phone: string, text: string): st
 }
 
 /**
- * Generates a Google Maps navigation URL for a multi-stop route.
- * Starts from the driver's current location to the first stop, then through subsequent stops.
+ * Generates a Google Maps URL using the Directions API format (`?api=1`),
+ * which is reliable for triggering the navigation mode in mobile apps with a clear "Start" button.
+ * This format handles origin, destination, and multiple waypoints using coordinates.
  */
-export function generateNavigationUrl(driverLocation: string, stops: string[]): string {
-    if (!driverLocation || stops.length === 0) return 'https://maps.google.com';
-    
-    const allStops = [driverLocation, ...stops];
+export function generateNavigationUrl(
+    driverLocationCoords: { lat: number; lon: number } | null,
+    stopsCoords: { lat: number; lon: number }[]
+): string {
+    if (!driverLocationCoords || stopsCoords.length === 0) {
+        return 'https://maps.google.com';
+    }
 
-    const url = new URL('https://www.google.com/maps/dir/');
-    url.pathname += allStops.map(s => encodeURIComponent(s)).join('/');
+    const formatCoord = (coord: { lat: number; lon: number }) => `${coord.lat},${coord.lon}`;
+
+    const origin = formatCoord(driverLocationCoords);
+    const destination = formatCoord(stopsCoords[stopsCoords.length - 1]);
+    const waypoints = stopsCoords.slice(0, -1).map(formatCoord);
+
+    const params = new URLSearchParams();
+    params.append('api', '1');
+    params.append('origin', origin);
+    params.append('destination', destination);
     
-    return url.toString();
+    if (waypoints.length > 0) {
+        params.append('waypoints', waypoints.join('|'));
+    }
+
+    params.append('travelmode', 'driving');
+
+    const baseUrl = 'https://www.google.com/maps/dir/';
+    return `${baseUrl}?${params.toString()}`;
 }
 
 
@@ -83,8 +138,9 @@ const SOUTH_MORAVIA_VIEWBOX = '16.3,48.7,17.2,49.3'; // lon_min,lat_min,lon_max,
 /**
  * Converts an address to geographic coordinates using Nominatim (OpenStreetMap).
  */
-async function geocodeAddress(address: string): Promise<{ lat: number; lon: number }> {
-    if (geocodeCache.has(address)) return geocodeCache.get(address)!;
+export async function geocodeAddress(address: string, language: string): Promise<{ lat: number; lon: number }> {
+    const cacheKey = `${address}_${language}`;
+    if (geocodeCache.has(cacheKey)) return geocodeCache.get(cacheKey)!;
     const proxyUrl = 'https://corsproxy.io/?';
 
     const fetchCoords = async (addrToTry: string, lang: string) => {
@@ -97,22 +153,60 @@ async function geocodeAddress(address: string): Promise<{ lat: number; lon: numb
     };
 
     try {
-        let result = await fetchCoords(address, 'cs');
+        let result = await fetchCoords(address, language);
         if (!result) {
             const city = address.split(',').map(p => p.trim()).pop();
             if (city && city.toLowerCase() !== address.toLowerCase()) {
-                result = await fetchCoords(city, 'cs');
+                result = await fetchCoords(city, language);
             }
         }
         
         if (result) {
-            geocodeCache.set(address, result);
+            geocodeCache.set(cacheKey, result);
             return result;
         }
         throw new Error(`Address not found: ${address}`);
     } catch (error) {
         console.error("Geocoding error:", error);
         throw new Error(`Could not find coordinates for address: ${address}.`);
+    }
+}
+
+// In-memory cache for suggestions to avoid repeated API calls for the same query
+const suggestionsCache = new Map<string, string[]>();
+
+/**
+ * Fetches address suggestions from Nominatim API based on user input.
+ */
+export async function getAddressSuggestions(query: string, language: string): Promise<string[]> {
+    if (!query || query.trim().length < 3) {
+        return [];
+    }
+    const cacheKey = `${query.toLowerCase()}_${language}`;
+    if (suggestionsCache.has(cacheKey)) {
+        return suggestionsCache.get(cacheKey)!;
+    }
+
+    const proxyUrl = 'https://corsproxy.io/?';
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=cz&viewbox=${SOUTH_MORAVIA_VIEWBOX}&accept-language=${language}&limit=5`;
+    const url = `${proxyUrl}${nominatimUrl}`;
+
+    try {
+        const response = await fetch(url, { headers: { 'User-Agent': 'RapidDispatchAI/1.0' } });
+        if (!response.ok) {
+            console.error('Nominatim API request for suggestions failed');
+            return [];
+        }
+        const data = await response.json();
+        if (data && Array.isArray(data)) {
+            const suggestions = data.map((item: any) => item.display_name);
+            suggestionsCache.set(cacheKey, suggestions);
+            return suggestions;
+        }
+        return [];
+    } catch (error) {
+        console.error("Address suggestion fetching error:", error);
+        return [];
     }
 }
 
@@ -255,12 +349,12 @@ export async function findBestVehicle(
     if (vehiclesInService.length === 0) return { messageKey: "error.noVehiclesInService" };
     
     const t = (key: string, params?: any) => key;
-    let sms = generateSms(rideRequest, t);
+    let sms = '';
     let optimizedStops: string[] | undefined = undefined;
 
     try {
-        let allStopCoords = await Promise.all(rideRequest.stops.map(stop => geocodeAddress(stop)));
-        const vehicleCoords = await Promise.all(vehiclesInService.map(v => geocodeAddress(v.location)));
+        let allStopCoords = await Promise.all(rideRequest.stops.map(stop => geocodeAddress(stop, language)));
+        const vehicleCoords = await Promise.all(vehiclesInService.map(v => geocodeAddress(v.location, language)));
         const pickupCoords = allStopCoords[0];
         
         // --- Optimize route if more than 2 stops and requested ---
@@ -282,7 +376,6 @@ export async function findBestVehicle(
 
             allStopCoords = reorderedCoords;
             optimizedStops = reorderedStops;
-            sms = generateSms({ ...rideRequest, stops: optimizedStops }, t);
         }
 
         const mainRideRoute = await getOsrmRoute(allStopCoords.map(c => `${c.lon},${c.lat}`).join(';'));
@@ -323,6 +416,12 @@ export async function findBestVehicle(
             otherAlternatives = suitableVehicles.slice(1);
         }
 
+        const bestVehicleIndex = vehiclesInService.findIndex(v => v.id === bestAlternative.vehicle.id);
+        const bestVehicleCoords = vehicleCoords[bestVehicleIndex];
+        const longNavigationUrl = generateNavigationUrl(bestVehicleCoords, allStopCoords);
+        const navigationUrl = await shortenUrl(longNavigationUrl);
+        sms = generateSms({ ...rideRequest, stops: optimizedStops || rideRequest.stops }, t, navigationUrl);
+
         return {
             vehicle: bestAlternative.vehicle,
             eta: bestAlternative.eta,
@@ -334,6 +433,9 @@ export async function findBestVehicle(
             alternatives: otherAlternatives,
             rideRequest,
             optimizedStops,
+            vehicleLocationCoords: bestVehicleCoords,
+            stopCoords: allStopCoords,
+            navigationUrl,
         };
 
     } catch (e: any) {

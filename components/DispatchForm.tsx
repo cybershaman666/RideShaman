@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import type { RideRequest, RideLog } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
 import { PlusIcon, TrashIcon } from './icons';
+import { getAddressSuggestions } from '../services/dispatchService';
 
 interface DispatchFormProps {
   onSubmit: (rideRequest: RideRequest, optimize: boolean) => void;
@@ -16,15 +17,18 @@ const AutocompleteInputField: React.FC<{
   id: string;
   value: string;
   onChange: (value: string) => void;
-  suggestions: string[];
+  suggestionMode: 'local' | 'remote';
+  localSuggestions?: string[];
   error?: string;
   hint?: string;
   placeholder?: string;
   isFirst?: boolean;
-}> = ({ id, value, onChange, suggestions, error, hint, placeholder, isFirst }) => {
-  const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
+}> = ({ id, value, onChange, suggestionMode, localSuggestions = [], error, hint, placeholder, isFirst }) => {
+  const { language } = useTranslation();
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const debounceTimeout = useRef<number | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -36,27 +40,62 @@ const AutocompleteInputField: React.FC<{
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filterSuggestions = (userInput: string) => {
-    const historyFiltered = suggestions.filter(
+  const fetchRemoteSuggestions = useCallback(async (query: string) => {
+    if (query.trim().length < 3) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const results = await getAddressSuggestions(query, language);
+    if (wrapperRef.current) { // Ensure component is still mounted
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+    }
+  }, [language]);
+
+  const debouncedFetch = useCallback((query: string) => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+    debounceTimeout.current = window.setTimeout(() => {
+      fetchRemoteSuggestions(query);
+    }, 400); // 400ms debounce delay
+  }, [fetchRemoteSuggestions]);
+
+  const filterLocalSuggestions = (userInput: string) => {
+    if (!userInput) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const filtered = localSuggestions.filter(
       suggestion => suggestion.toLowerCase().includes(userInput.toLowerCase())
     );
-    setFilteredSuggestions(historyFiltered);
-    setShowSuggestions(historyFiltered.length > 0);
+    setSuggestions(filtered);
+    setShowSuggestions(filtered.length > 0);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const userInput = e.target.value;
     onChange(userInput);
-    if (userInput) filterSuggestions(userInput);
-    else {
-      setFilteredSuggestions([]);
-      setShowSuggestions(false);
+
+    if (suggestionMode === 'remote') {
+      debouncedFetch(userInput);
+    } else {
+      filterLocalSuggestions(userInput);
     }
   };
 
   const onSuggestionClick = (suggestion: string) => {
     onChange(suggestion);
     setShowSuggestions(false);
+    setSuggestions([]);
+  };
+  
+  const onFocus = () => {
+    if (suggestionMode === 'local' && value) {
+      filterLocalSuggestions(value);
+    }
   };
   
   return (
@@ -68,16 +107,16 @@ const AutocompleteInputField: React.FC<{
         name={id}
         value={value}
         onChange={handleChange}
-        onFocus={() => value && filterSuggestions(value)}
+        onFocus={onFocus}
         className={`w-full bg-slate-700 border ${error ? 'border-red-500' : 'border-slate-600'} rounded-md shadow-sm py-1 px-3 text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500`}
         autoComplete="off"
         placeholder={placeholder}
       />
       {hint && !error && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
       {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
-      {showSuggestions && filteredSuggestions.length > 0 && (
+      {showSuggestions && suggestions.length > 0 && (
         <ul className="absolute z-10 w-full bg-slate-800 border border-slate-600 rounded-md mt-1 max-h-40 overflow-y-auto shadow-lg">
-          {filteredSuggestions.map((suggestion, index) => (
+          {suggestions.map((suggestion, index) => (
             <li
               key={index}
               onClick={() => onSuggestionClick(suggestion)}
@@ -104,14 +143,6 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof RideRequest | 'stops', string>>>({});
   const [optimizeStops, setOptimizeStops] = useState(true);
-
-  const uniqueAddresses = useMemo(() => {
-    const addresses = new Set<string>();
-    rideHistory.forEach(log => {
-        log.stops.forEach(stop => addresses.add(stop));
-    });
-    return Array.from(addresses);
-  }, [rideHistory]);
 
   const uniqueCustomerNames = useMemo(() => {
       const names = new Set<string>(rideHistory.map(log => log.customerName).filter(Boolean));
@@ -218,7 +249,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
   const CustomerAutocompleteField: React.FC<{ label: string, id: string, value: string, onChange: (v: string) => void, suggestions: string[], error?: string }> = ({ label, id, value, onChange, suggestions, error }) => (
     <div>
       <label htmlFor={id} className="block text-xs font-medium text-gray-300 mb-1">{label}</label>
-      <AutocompleteInputField id={id} value={value} onChange={onChange} suggestions={suggestions} error={error} />
+      <AutocompleteInputField id={id} value={value} onChange={onChange} suggestionMode="local" localSuggestions={suggestions} error={error} />
     </div>
   );
 
@@ -239,7 +270,7 @@ export const DispatchFormComponent: React.FC<DispatchFormProps> = ({ onSubmit, o
                       id={`stop-${index}`}
                       value={stop}
                       onChange={(val) => handleStopChange(index, val)}
-                      suggestions={uniqueAddresses}
+                      suggestionMode="remote"
                       placeholder={index === 0 ? t('dispatch.stops.startPlaceholder') : t('dispatch.stops.destinationPlaceholder')}
                       isFirst={index === 0}
                     />
